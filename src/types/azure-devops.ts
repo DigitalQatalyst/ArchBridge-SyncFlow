@@ -100,6 +100,15 @@ export interface CreateProjectResponse {
   };
 }
 
+// Process Template Types
+export interface ProcessTemplate {
+  typeId: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  isEnabled: boolean;
+}
+
 // Sync Progress Types
 export type SyncEventType =
   | 'epic:created'

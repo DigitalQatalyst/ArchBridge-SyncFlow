@@ -347,6 +347,67 @@ Set a configuration as the active one (will deactivate all others). Only configu
 
 - **Important:** Only configurations with `testPassed: true` can be activated. Attempting to activate an untested or failed configuration will result in an error.
 
+### Process Templates
+
+#### List Process Templates
+
+Get all available process templates for the organization. This allows the frontend to display available templates for user selection.
+
+**Endpoint:** `GET /api/azure-devops/processes?configId=xxx`
+
+**Query Parameters:**
+
+- `configId` (optional): Use a specific saved configuration. If omitted, uses the active configuration.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "typeId": "adcc42ab-9882-485e-a3ed-7676785c7e0f",
+      "name": "Agile",
+      "description": "Agile process template",
+      "isDefault": false,
+      "isEnabled": true
+    },
+    {
+      "typeId": "6b724908-ef14-45cf-84f8-768b5384da45",
+      "name": "Scrum",
+      "description": "Scrum process template",
+      "isDefault": false,
+      "isEnabled": true
+    },
+    {
+      "typeId": "27450541-8e31-4150-9947-d59beef0d2ce",
+      "name": "Basic",
+      "description": "Basic process template",
+      "isDefault": false,
+      "isEnabled": true
+    }
+  ],
+  "count": 3
+}
+```
+
+**Common Process Templates:**
+
+- **Agile**: Supports Epic, Feature, User Story, Task, and Bug work item types
+- **Scrum**: Supports Epic, Feature, Product Backlog Item, Task, and Bug work item types
+- **Basic**: Supports Epic, Issue, and Task work item types
+- **CMMI**: Supports Epic, Feature, Requirement, Task, Change Request, Review, Risk, and Bug work item types
+
+**Error Response:**
+
+```json
+{
+  "success": false,
+  "error": "Failed to fetch process templates",
+  "details": "HTTP 401: Unauthorized"
+}
+```
+
 ### Project Management
 
 #### Create Project
@@ -379,10 +440,12 @@ Create a new Azure DevOps project in the organization. The project creation is q
 
 **Note:** If `capabilities` is not provided, the project will default to:
 
-- **Process Template**: Agile (`adcc42ab-9882-485e-a3ed-7676785c7e0f`) - Supports Epic, Feature, User Story, Task, and Bug work item types
+- **Process Template**: Agile - The Agile process template ID is automatically fetched from your organization using the Processes API (`GET /_apis/work/processes?api-version=7.1`). Supports Epic, Feature, User Story, Task, and Bug work item types.
 - **Version Control**: Git
 
 If `capabilities` is provided but `processTemplate` or `versioncontrol` is missing, those will also default to Agile and Git respectively.
+
+**Important:** The Agile process template must be available in your Azure DevOps organization. If it's not found, the project creation will fail with an error message. You can specify a different process template ID in the request if needed.
 
 **Response:**
 

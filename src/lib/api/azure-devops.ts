@@ -7,6 +7,7 @@ import type {
   TestConnectionResponse,
   CreateProjectRequest,
   CreateProjectResponse,
+  ProcessTemplate,
   SyncWorkItemsRequest,
   SyncEvent,
   SyncEventType,
@@ -176,6 +177,16 @@ export const azureDevOpsApi = {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
       };
     }
+  },
+
+  /**
+   * List available process templates
+   */
+  listProcessTemplates: async (
+    configId?: string
+  ): Promise<ApiResponse<ProcessTemplate[]>> => {
+    const query = buildQueryString(configId ? { configId } : undefined);
+    return fetchApi<ProcessTemplate[]>(`/processes${query}`);
   },
 
   /**

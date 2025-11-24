@@ -7,6 +7,7 @@ import type {
   AzureDevOpsConfiguration,
   CreateProjectRequest,
   CreateProjectResponse,
+  ProcessTemplate,
   SyncWorkItemsRequest,
   SyncEvent,
   SyncSuccessEventData,
@@ -165,6 +166,21 @@ export function useTestAzureDevOpsConnection() {
         );
       }
       queryClient.invalidateQueries({ queryKey: azureDevOpsKeys.configurations() });
+    },
+  });
+}
+
+// Process Template Hooks
+
+export function useProcessTemplates(configId?: string) {
+  return useQuery({
+    queryKey: [...azureDevOpsKeys.all, 'process-templates', configId],
+    queryFn: async () => {
+      const response = await azureDevOpsApi.listProcessTemplates(configId);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch process templates');
+      }
+      return response.data;
     },
   });
 }

@@ -20,16 +20,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useCreateAzureDevOpsProject } from '@/hooks/useAzureDevOps';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useCreateAzureDevOpsProject, useProcessTemplates } from '@/hooks/useAzureDevOps';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
-import type { CreateProjectRequest } from '@/types/azure-devops';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import type { CreateProjectRequest, ProcessTemplate } from '@/types/azure-devops';
 import { useConnection } from '@/contexts/ConnectionContext';
+import { useEffect, useMemo } from 'react';
+
+// Templates that support User Stories (based on Azure DevOps documentation)
+const TEMPLATES_WITH_USER_STORIES = ['Agile'];
 
 const projectFormSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   description: z.string().optional(),
   visibility: z.enum(['private', 'public']).optional().default('private'),
+  processTemplateId: z.string().optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
@@ -43,6 +49,12 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
   const { toast } = useToast();
   const { targetConfigId, setProjectName } = useConnection();
   const createMutation = useCreateAzureDevOpsProject();
+  const { data: templates, isLoading: loadingTemplates, error: templatesError } = useProcessTemplates(targetConfigId);
+
+  // Find Agile template as default
+  const agileTemplate = useMemo(() => {
+    return templates?.find((t) => t.name.toLowerCase() === 'agile');
+  }, [templates]);
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
@@ -50,23 +62,49 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
       name: '',
       description: '',
       visibility: 'private',
+      processTemplateId: undefined, // Will be set to Agile when templates load
     },
   });
 
+  // Set default to Agile when templates are loaded
+  useEffect(() => {
+    if (agileTemplate && !form.getValues('processTemplateId')) {
+      form.setValue('processTemplateId', agileTemplate.typeId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agileTemplate]);
+
+  const selectedTemplateId = form.watch('processTemplateId');
+  const selectedTemplate = useMemo(() => {
+    return templates?.find((t) => t.typeId === selectedTemplateId);
+  }, [templates, selectedTemplateId]);
+
+  // Show warning if template is not Agile (Agile is the only one that supports User Stories)
+  const showUserStoryWarning = useMemo(() => {
+    if (!selectedTemplate) return false;
+    return !TEMPLATES_WITH_USER_STORIES.includes(selectedTemplate.name);
+  }, [selectedTemplate]);
+
   const onSubmit = async (values: ProjectFormValues) => {
     try {
+      const template = templates?.find((t) => t.typeId === values.processTemplateId);
+      
       const projectData: CreateProjectRequest = {
         name: values.name,
         description: values.description || undefined,
         visibility: values.visibility,
-        capabilities: {
-          processTemplate: {
-            templateTypeId: '6b724908-ef14-45cf-84f8-768b5384da45', // Basic process template
+        // Only include capabilities if a template is selected and it's not Agile
+        // If Agile or no template selected, omit capabilities to use server defaults
+        ...(template && template.name.toLowerCase() !== 'agile' && {
+          capabilities: {
+            processTemplate: {
+              templateTypeId: template.typeId,
+            },
+            versioncontrol: {
+              sourceControlType: 'Git',
+            },
           },
-          versioncontrol: {
-            sourceControlType: 'Git',
-          },
-        },
+        }),
       };
 
       const result = await createMutation.mutateAsync({
@@ -91,7 +129,19 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
     }
   };
 
-  const isLoading = createMutation.isPending;
+  const isLoading = createMutation.isPending || loadingTemplates;
+
+  // Show error if templates failed to load
+  if (templatesError) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Failed to load process templates: {templatesError instanceof Error ? templatesError.message : 'Unknown error'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -158,6 +208,49 @@ export function CreateProjectForm({ onSuccess, onCancel }: CreateProjectFormProp
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="processTemplateId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Process Template</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={loadingTemplates || !templates || templates.length === 0}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingTemplates ? 'Loading templates...' : 'Select process template'} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {templates?.map((template) => (
+                    <SelectItem key={template.typeId} value={template.typeId}>
+                      {template.name}
+                      {template.name.toLowerCase() === 'agile' && ' (Default)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Choose the process template for your project. Defaults to Agile if not specified.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {showUserStoryWarning && selectedTemplate && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Warning:</strong> The {selectedTemplate.name} process template does not support User Stories. 
+              When syncing work items, User Stories will not be created. Only Epics and Features will be synced.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="flex justify-end gap-2">
           {onCancel && (
