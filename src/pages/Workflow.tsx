@@ -5,14 +5,26 @@ import { SourceSelector } from '@/components/SourceSelector';
 import { SourceConnectionForm } from '@/components/SourceConnectionForm';
 import { TargetSelector } from '@/components/TargetSelector';
 import { TargetConnectionForm } from '@/components/TargetConnectionForm';
+import { ProjectCreationStep } from '@/components/ProjectCreationStep';
 import { HierarchyViewer } from '@/components/HierarchyViewer';
 import { SyncPanel } from '@/components/SyncPanel';
-import { ConnectionProvider } from '@/contexts/ConnectionContext';
+import { ConnectionProvider, useConnection } from '@/contexts/ConnectionContext';
 import { SyncProvider } from '@/contexts/SyncContext';
 import { Button } from '@/components/ui/button';
 import { ArrowBigUp, Settings } from 'lucide-react';
 
 const Workflow = () => {
+  return (
+    <ConnectionProvider>
+      <SyncProvider>
+        <WorkflowContent />
+      </SyncProvider>
+    </ConnectionProvider>
+  );
+};
+
+const WorkflowContent = () => {
+  const { targetType } = useConnection();
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('source-select');
   const [completedSteps, setCompletedSteps] = useState<WorkflowStep[]>([]);
 
@@ -27,10 +39,13 @@ const Workflow = () => {
     setCurrentStep(nextStep);
   };
 
+  const getNextStepAfterTargetConnect = (): WorkflowStep => {
+    // If target is Azure DevOps, go to project creation, otherwise go to hierarchy
+    return targetType === 'azure-devops' ? 'project-create' : 'hierarchy';
+  };
+
   return (
-    <ConnectionProvider>
-      <SyncProvider>
-        <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
           {/* Header */}
           <header className="border-b border-border bg-card">
             <div className="container mx-auto px-6 py-4">
@@ -78,6 +93,11 @@ const Workflow = () => {
               )}
               {currentStep === 'target-connect' && (
                 <TargetConnectionForm
+                  onNext={() => goToNextStep(getNextStepAfterTargetConnect())}
+                />
+              )}
+              {currentStep === 'project-create' && (
+                <ProjectCreationStep
                   onNext={() => goToNextStep('hierarchy')}
                 />
               )}
@@ -97,8 +117,6 @@ const Workflow = () => {
             </div>
           </footer>
         </div>
-      </SyncProvider>
-    </ConnectionProvider>
   );
 };
 

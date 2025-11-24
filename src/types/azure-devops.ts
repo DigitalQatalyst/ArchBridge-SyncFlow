@@ -63,3 +63,40 @@ export interface TestConnectionResponse {
   projectCount?: number;
 }
 
+// Project Creation Types
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  visibility?: 'private' | 'public';
+  capabilities?: {
+    processTemplate?: {
+      templateTypeId: string;
+    };
+    versioncontrol?: {
+      sourceControlType: 'Git' | 'Tfvc';
+    };
+  };
+}
+
+export interface ProjectOperation {
+  id: string;
+  status: string;
+  url: string;
+  _links?: {
+    self?: {
+      href: string;
+    };
+  };
+}
+
+export interface CreateProjectResponse {
+  id: string;
+  status: string;
+  url: string;
+  _links?: {
+    self?: {
+      href: string;
+    };
+  };
+}
+

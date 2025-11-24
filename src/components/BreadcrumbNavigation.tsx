@@ -1,11 +1,13 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useConnection } from '@/contexts/ConnectionContext';
 
 export type WorkflowStep = 
   | 'source-select'
   | 'source-connect'
   | 'target-select'
   | 'target-connect'
+  | 'project-create'
   | 'hierarchy'
   | 'sync';
 
@@ -14,16 +16,24 @@ interface BreadcrumbNavigationProps {
   completedSteps: WorkflowStep[];
 }
 
-const steps: { id: WorkflowStep; label: string }[] = [
+const allSteps: { id: WorkflowStep; label: string }[] = [
   { id: 'source-select', label: 'Source System' },
   { id: 'source-connect', label: 'Source Connection' },
   { id: 'target-select', label: 'Target System' },
   { id: 'target-connect', label: 'Target Connection' },
+  { id: 'project-create', label: 'Create Project' },
   { id: 'hierarchy', label: 'Select Items' },
   { id: 'sync', label: 'Sync' },
 ];
 
 export const BreadcrumbNavigation = ({ currentStep, completedSteps }: BreadcrumbNavigationProps) => {
+  const { targetType } = useConnection();
+  
+  // Only show project-create step if target is Azure DevOps
+  const steps = targetType === 'azure-devops'
+    ? allSteps
+    : allSteps.filter((step) => step.id !== 'project-create');
+  
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   return (

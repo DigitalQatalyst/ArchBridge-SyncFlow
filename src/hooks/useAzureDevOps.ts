@@ -4,6 +4,8 @@ import type {
   ConfigurationCreateRequest,
   ConfigurationUpdateRequest,
   AzureDevOpsConfiguration,
+  CreateProjectRequest,
+  CreateProjectResponse,
 } from '@/types/azure-devops';
 
 // Query Keys
@@ -155,6 +157,26 @@ export function useTestAzureDevOpsConnection() {
         );
       }
       queryClient.invalidateQueries({ queryKey: azureDevOpsKeys.configurations() });
+    },
+  });
+}
+
+// Project Hooks
+
+export function useCreateAzureDevOpsProject() {
+  return useMutation({
+    mutationFn: async ({
+      project,
+      configId,
+    }: {
+      project: CreateProjectRequest;
+      configId?: string;
+    }) => {
+      const response = await azureDevOpsApi.createProject(project, configId);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to create project');
+      }
+      return response.data;
     },
   });
 }

@@ -347,6 +347,183 @@ Set a configuration as the active one (will deactivate all others). Only configu
 
 - **Important:** Only configurations with `testPassed: true` can be activated. Attempting to activate an untested or failed configuration will result in an error.
 
+### Project Management
+
+#### Create Project
+
+Create a new Azure DevOps project in the organization. The project creation is queued and returns an operation reference that can be used to check the status of the project creation.
+
+**Endpoint:** `POST /api/azure-devops/projects?configId=xxx`
+
+**Query Parameters:**
+
+- `configId` (optional): Use a specific saved configuration. If omitted, uses the active configuration.
+
+**Request Body:**
+
+```json
+{
+  "name": "My New Project",                    // Required - Project name
+  "description": "Project description",        // Optional - Project description
+  "visibility": "private",                     // Optional - "private" or "public" (default: private)
+  "capabilities": {                            // Optional - Project capabilities
+    "processTemplate": {
+      "templateTypeId": "6b724908-ef14-45cf-84f8-768b5384da45"  // Process template ID (e.g., Scrum, Agile, Basic)
+    },
+    "versioncontrol": {
+      "sourceControlType": "Git"               // "Git" or "Tfvc"
+    }
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Project creation queued successfully",
+  "data": {
+    "id": "operation-id-123",
+    "status": "queued",
+    "url": "https://dev.azure.com/mycompany/_apis/operations/operation-id-123",
+    "_links": {
+      "self": {
+        "href": "https://dev.azure.com/mycompany/_apis/operations/operation-id-123"
+      }
+    }
+  }
+}
+```
+
+**Important Notes:**
+
+- Project creation is asynchronous and returns an operation reference
+- Use the operation reference to check the status of project creation
+- The configuration must have passed the connection test (`testPassed: true`) to create projects
+- If no `configId` is provided, the active configuration will be used
+- Project listing is available through the test connection endpoint (`GET /api/azure-devops/test-connection`)
+
+**Error Response (if configuration not tested):**
+
+```json
+{
+  "success": false,
+  "error": "Configuration \"My Config\" has not passed the connection test. Please test and update the configuration before using it."
+}
+```
+
+### Work Items Management
+
+Create work items (Epics, Features, User Stories) in Azure DevOps from Ardoq hierarchy data. The syncing process uses Server-Sent Events (SSE) to stream real-time progress updates.
+
+**Documentation**: See [Syncing Progress Documentation](./syncing-progress.md) for complete details on:
+
+- How the syncing process works
+- Real-time progress streaming with SSE
+- Event types and data structures
+- Frontend integration examples
+- Progress display guidelines
+
+**Key Features:**
+
+- Sequential creation of Epics → Features → User Stories
+- Parent-child relationship establishment
+- Real-time progress updates via SSE
+- Error handling for partial failures
+
+#### Create Work Items
+
+Create work items from Ardoq hierarchy data. This endpoint streams progress updates using Server-Sent Events (SSE).
+
+**Endpoint:** `POST /api/azure-devops/projects/:project/workitems?configId=xxx`
+
+**Path Parameters:**
+
+- `project` - Azure DevOps project ID or project name
+
+**Query Parameters:**
+
+- `configId` (optional): Use a specific saved configuration. If omitted, uses the active configuration.
+
+**Request Body (application/json):**
+
+```json
+{
+  "epics": [
+    {
+      "_id": "epic-123",
+      "name": "Epic Name",
+      "type": "Epic",
+      "description": "Epic description",
+      "children": [
+        {
+          "_id": "feature-456",
+          "name": "Feature Name",
+          "type": "Feature",
+          "description": "Feature description",
+          "children": [
+            {
+              "_id": "userstory-789",
+              "name": "User Story Name",
+              "type": "User Story",
+              "description": "User story description"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Response (text/event-stream):**
+
+The response is a Server-Sent Events (SSE) stream that emits events as work items are created:
+
+```
+event: epic:created
+data: {"type":"epic:created","data":{"ardoqId":"epic-123","name":"Epic Name","azureDevOpsId":12345,"azureDevOpsUrl":"https://dev.azure.com/org/project/_workitems/edit/12345","timestamp":"2024-01-15T10:30:00Z"}}
+
+event: feature:created
+data: {"type":"feature:created","data":{"ardoqId":"feature-456","name":"Feature Name","azureDevOpsId":12346,"azureDevOpsUrl":"https://dev.azure.com/org/project/_workitems/edit/12346","timestamp":"2024-01-15T10:30:05Z"}}
+
+event: userstory:created
+data: {"type":"userstory:created","data":{"ardoqId":"userstory-789","name":"User Story Name","azureDevOpsId":12347,"azureDevOpsUrl":"https://dev.azure.com/org/project/_workitems/edit/12347","timestamp":"2024-01-15T10:30:10Z"}}
+
+event: sync:complete
+data: {"type":"sync:complete","data":{"summary":{"total":3,"created":3,"failed":0,"epics":{"total":1,"created":1,"failed":0},"features":{"total":1,"created":1,"failed":0},"userStories":{"total":1,"created":1,"failed":0}},"timestamp":"2024-01-15T10:30:15Z"}}
+```
+
+**Event Types:**
+
+- `epic:created` - Epic successfully created
+- `feature:created` - Feature successfully created
+- `userstory:created` - User Story successfully created
+- `epic:failed` - Epic creation failed
+- `feature:failed` - Feature creation failed
+- `userstory:failed` - User Story creation failed
+- `sync:complete` - All items processed (with summary)
+- `sync:error` - Critical error occurred
+
+**Important Notes:**
+
+- The endpoint uses Server-Sent Events (SSE) for real-time progress updates
+- Items are created sequentially: Epic → Features → User Stories
+- Parent-child relationships are automatically established
+- The process continues even if individual items fail
+- The configuration must have passed the connection test (`testPassed: true`)
+- See [Syncing Progress Documentation](./syncing-progress.md) for detailed frontend integration examples
+
+**Error Response (if configuration not tested):**
+
+```json
+{
+  "success": false,
+  "error": "Configuration \"My Config\" has not passed the connection test. Please test and update the configuration before using it."
+}
+```
+
 ---
 
 ## Error Handling
@@ -406,6 +583,15 @@ curl "http://localhost:3000/api/azure-devops/configurations/active"
 
 # Activate a configuration
 curl -X POST "http://localhost:3000/api/azure-devops/configurations/azdo-config-xxx/activate"
+
+# Create a project
+curl -X POST "http://localhost:3000/api/azure-devops/projects?configId=azdo-config-xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My New Project",
+    "description": "Project description",
+    "visibility": "private"
+  }'
 ```
 
 ### Using JavaScript/TypeScript
@@ -439,6 +625,21 @@ const activateResponse = await fetch(
   { method: 'POST' }
 );
 const activated = await activateResponse.json();
+
+// Create a project
+const createProjectResponse = await fetch(
+  `http://localhost:3000/api/azure-devops/projects?configId=${config.configuration.id}`,
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'My New Project',
+      description: 'Project description',
+      visibility: 'private'
+    })
+  }
+);
+const projectOperation = await createProjectResponse.json();
 ```
 
 ### Using Axios
@@ -467,6 +668,15 @@ const { data: configs } = await api.get('/configurations');
 
 // Activate a configuration
 const { data: activated } = await api.post(`/configurations/${config.data.configuration.id}/activate`);
+
+// Create a project
+const { data: projectOperation } = await api.post('/projects', {
+  name: 'My New Project',
+  description: 'Project description',
+  visibility: 'private'
+}, {
+  params: { configId: config.data.configuration.id }
+});
 ```
 
 ---

@@ -5,6 +5,8 @@ import type {
   ConfigurationUpdateRequest,
   CreateConfigurationResponse,
   TestConnectionResponse,
+  CreateProjectRequest,
+  CreateProjectResponse,
 } from '@/types/azure-devops';
 
 // Get API base URL from environment variable or default to localhost:3000
@@ -171,6 +173,20 @@ export const azureDevOpsApi = {
         error: error instanceof Error ? error.message : 'Unknown error occurred',
       };
     }
+  },
+
+  /**
+   * Create a new Azure DevOps project
+   */
+  createProject: async (
+    project: CreateProjectRequest,
+    configId?: string
+  ): Promise<ApiResponse<CreateProjectResponse>> => {
+    const query = buildQueryString(configId ? { configId } : undefined);
+    return fetchApi<CreateProjectResponse>(`/projects${query}`, {
+      method: 'POST',
+      body: JSON.stringify(project),
+    });
   },
 };
 
