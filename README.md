@@ -1,73 +1,153 @@
-# Welcome to your Lovable project
+# ArchBridge - Enterprise Work Item Synchronization Platform
 
-## Project info
+ArchBridge is a modular work item synchronization platform that connects enterprise systems like Ardoq and Azure DevOps. It provides a streamlined workflow for syncing hierarchical work items (Epics, Features, and User Stories) between different enterprise tools.
 
-**URL**: https://lovable.dev/projects/82630a19-4d03-42fd-9604-40cfe4167e44
+## Overview
 
-## How can I edit this code?
+ArchBridge enables organizations to synchronize work items across different enterprise platforms, maintaining data consistency and reducing manual effort. The platform currently supports:
 
-There are several ways of editing your application.
+- **Source System**: Ardoq (Enterprise Architecture Management)
+- **Target System**: Azure DevOps (Work Item Management)
 
-**Use Lovable**
+## Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/82630a19-4d03-42fd-9604-40cfe4167e44) and start prompting.
+### 🔄 Workflow-Based Synchronization
 
-Changes made via Lovable will be committed automatically to this repo.
+- Step-by-step guided workflow for syncing work items
+- Source and target system selection
+- Connection testing and validation
+- Hierarchical work item selection (Epics → Features → User Stories)
 
-**Use your preferred IDE**
+### 📊 Hierarchy Management
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Visual hierarchy viewer for Epics, Features, and User Stories
+- Bulk selection with cascading deselection:
+  - Deselecting an Epic automatically deselects all its Features and User Stories
+  - Deselecting a Feature automatically deselects all its User Stories
+- All items selected by default for easy bulk operations
+- Expandable/collapsible tree view
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### ⚙️ Configuration Management
 
-Follow these steps:
+- Multiple Ardoq configuration support
+- Connection testing and validation
+- Active configuration management
+- Secure credential storage
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### 🎨 Modern UI
+
+- Built with shadcn-ui components
+- Responsive design
+- Dark mode support
+- Intuitive user experience
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher recommended)
+- npm or yarn package manager
+
+### Installation
+
+1. Clone the repository:
+
+```bash
 git clone <YOUR_GIT_URL>
+cd ArchBridge-SyncFlow
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Install dependencies:
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. Start the development server:
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+1. Open your browser and navigate to `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Project Structure
 
-**Use GitHub Codespaces**
+```text
+src/
+├── components/          # React components
+│   ├── ardoq/          # Ardoq-specific components
+│   ├── ui/             # shadcn-ui components
+│   └── ...             # Other shared components
+├── contexts/           # React contexts for state management
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions and API clients
+├── pages/              # Page components
+└── types/              # TypeScript type definitions
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Technology Stack
 
-## What technologies are used for this project?
+- **Frontend Framework**: React 18
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **UI Components**: shadcn-ui (Radix UI primitives)
+- **Styling**: Tailwind CSS
+- **Routing**: React Router
+- **State Management**: React Context API
+- **Data Fetching**: TanStack Query (React Query)
+- **Form Handling**: React Hook Form with Zod validation
 
-This project is built with:
+## Workflow Steps
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Select Source System**: Choose Ardoq as your source system
+2. **Connect to Source**: Configure and test Ardoq connection
+3. **Select Target System**: Choose Azure DevOps as your target
+4. **Connect to Target**: Configure Azure DevOps connection
+5. **Select Work Items**: Browse and select Epics, Features, and User Stories
+6. **Sync**: Execute the synchronization process
 
-## How can I deploy this project?
+## Configuration
 
-Simply open [Lovable](https://lovable.dev/projects/82630a19-4d03-42fd-9604-40cfe4167e44) and click on Share -> Publish.
+### Ardoq Configuration
 
-## Can I connect a custom domain to my Lovable project?
+Before syncing, you need to configure your Ardoq connection:
 
-Yes, you can!
+1. Navigate to **Configurations** → **Ardoq Configuration**
+2. Add a new configuration with:
+   - Configuration name
+   - API host
+   - API token
+   - Organization label
+3. Test the connection
+4. Activate the configuration
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Development
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run build:dev` - Build for development
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
+
+### Code Style
+
+This project uses ESLint for code quality. Make sure to run `npm run lint` before committing changes.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is private and proprietary.
+
+## Support
+
+For issues, questions, or feature requests, please contact the development team.
+
+---
+
+**ArchBridge** © 2025 - Extensible Work Item Synchronization Platform
