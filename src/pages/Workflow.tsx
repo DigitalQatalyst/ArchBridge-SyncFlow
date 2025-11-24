@@ -45,7 +45,7 @@ const WorkflowContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
           {/* Header */}
           <header className="border-b border-border bg-card">
             <div className="container mx-auto px-6 py-4">
@@ -72,46 +72,62 @@ const WorkflowContent = () => {
           </header>
 
           {/* Main Content */}
-          <main className="container mx-auto px-6 py-8">
+          <main className="container mx-auto px-6 py-8 flex-grow">
             <BreadcrumbNavigation currentStep={currentStep} completedSteps={completedSteps} />
 
-            <div className="mt-8">
+            <div className="mt-8 animate-fade-in">
               {currentStep === 'source-select' && (
-                <SourceSelector
-                  onNext={() => goToNextStep('source-connect')}
-                />
+                <div className="animate-slide-up">
+                  <SourceSelector
+                    onNext={() => goToNextStep('source-connect')}
+                  />
+                </div>
               )}
               {currentStep === 'source-connect' && (
-                <SourceConnectionForm
-                  onNext={() => goToNextStep('target-select')}
-                />
+                <div className="animate-slide-up">
+                  <SourceConnectionForm
+                    onNext={() => goToNextStep('target-select')}
+                  />
+                </div>
               )}
               {currentStep === 'target-select' && (
-                <TargetSelector
-                  onNext={() => goToNextStep('target-connect')}
-                />
+                <div className="animate-slide-up">
+                  <TargetSelector
+                    onNext={() => goToNextStep('target-connect')}
+                  />
+                </div>
               )}
               {currentStep === 'target-connect' && (
-                <TargetConnectionForm
-                  onNext={() => goToNextStep(getNextStepAfterTargetConnect())}
-                />
+                <div className="animate-slide-up">
+                  <TargetConnectionForm
+                    onNext={() => goToNextStep(getNextStepAfterTargetConnect())}
+                  />
+                </div>
               )}
               {currentStep === 'project-create' && (
-                <ProjectCreationStep
-                  onNext={() => goToNextStep('hierarchy')}
-                />
+                <div className="animate-slide-up">
+                  <ProjectCreationStep
+                    onNext={() => goToNextStep('hierarchy')}
+                  />
+                </div>
               )}
               {currentStep === 'hierarchy' && (
-                <HierarchyViewer
-                  onNext={() => goToNextStep('sync')}
-                />
+                <div className="animate-slide-up">
+                  <HierarchyViewer
+                    onNext={() => goToNextStep('sync')}
+                  />
+                </div>
               )}
-              {currentStep === 'sync' && <SyncPanel />}
+              {currentStep === 'sync' && (
+                <div className="animate-slide-up">
+                  <SyncPanel />
+                </div>
+              )}
             </div>
           </main>
 
           {/* Footer */}
-          <footer className="border-t border-border mt-16 py-6">
+          <footer className="border-t border-border bg-card py-6 mt-auto">
             <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
               <p>ArchBridge © 2025 - Extensible Work Item Synchronization Platform</p>
             </div>

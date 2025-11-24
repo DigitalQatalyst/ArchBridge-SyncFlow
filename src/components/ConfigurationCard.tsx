@@ -27,7 +27,7 @@ export function ConfigurationCard({
   return (
     <Card
       className={cn(
-        'cursor-pointer transition-all hover:shadow-md hover:border-primary/50',
+        'cursor-pointer transition-smooth hover:shadow-lg hover:border-primary/50 hover:-translate-y-1',
         className
       )}
       onClick={onClick}

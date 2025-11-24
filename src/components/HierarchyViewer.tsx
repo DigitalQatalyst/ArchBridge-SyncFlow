@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Popover,
   PopoverContent,
@@ -486,16 +487,95 @@ export const HierarchyViewer = ({ onNext }: HierarchyViewerProps) => {
   // Validate workspaces is an array
   const workspacesArray = Array.isArray(workspaces) ? workspaces : [];
 
-  // Filter workspaces based on search query
-  const filteredWorkspaces = workspacesArray.filter((workspace) => {
-    if (!workspaceSearchQuery) return true;
-    const query = workspaceSearchQuery.toLowerCase();
-    return (
-      workspace.name?.toLowerCase().includes(query) ||
-      workspace.description?.toLowerCase().includes(query) ||
-      workspace._id?.toLowerCase().includes(query)
-    );
-  });
+  // Filter and sort workspaces based on search query with intelligent ranking
+  const filteredWorkspaces = (() => {
+    if (!workspaceSearchQuery) return workspacesArray;
+
+    const query = workspaceSearchQuery.toLowerCase().trim();
+    const queryWords = query.split(/\s+/).filter(w => w.length > 0);
+
+    // Score each workspace based on match quality
+    const scoredWorkspaces = workspacesArray
+      .map((workspace) => {
+        const name = workspace.name?.toLowerCase() || '';
+        const description = workspace.description?.toLowerCase() || '';
+        const id = workspace._id?.toLowerCase() || '';
+
+        let score = 0;
+
+        // Exact match (case-insensitive) - highest priority
+        if (name === query) {
+          score += 1000;
+        } else if (description === query) {
+          score += 500;
+        } else {
+          // Exact phrase match (query appears as complete phrase in name) - very high priority
+          if (name.includes(` ${query} `) || name.startsWith(`${query} `) || name.endsWith(` ${query}`) || name === query) {
+            score += 200;
+          } else if (description.includes(` ${query} `) || description.startsWith(`${query} `) || description.endsWith(` ${query}`)) {
+            score += 100;
+          }
+
+          // Starts with query - high priority
+          if (name.startsWith(query)) {
+            score += 150;
+          } else if (description.startsWith(query)) {
+            score += 75;
+          }
+
+          // Full-word match - medium-high priority
+          const nameWords = name.split(/\s+/);
+          const descWords = description.split(/\s+/);
+          const allWordsMatch = queryWords.every(qw =>
+            nameWords.some(nw => nw === qw) || descWords.some(dw => dw === qw)
+          );
+
+          if (allWordsMatch) {
+            // Check if words appear in the same order
+            const nameWordIndices = queryWords.map(qw => nameWords.indexOf(qw));
+            const descWordIndices = queryWords.map(qw => descWords.indexOf(qw));
+            const nameInOrder = nameWordIndices.every((idx, i) => i === 0 || idx > nameWordIndices[i - 1]);
+            const descInOrder = descWordIndices.every((idx, i) => i === 0 || idx > descWordIndices[i - 1]);
+
+            if (nameInOrder && nameWords.length === queryWords.length) {
+              // Exact word sequence match
+              score += 80;
+            } else if (nameInOrder || (descInOrder && descWords.length === queryWords.length)) {
+              // Words in order but not exact sequence
+              score += 50;
+            } else if (allWordsMatch) {
+              // All words present but not in order
+              score += 30;
+            }
+          }
+
+          // Contains query as substring (but not as exact phrase) - lower priority
+          if (name.includes(query) && score < 200) {
+            score += 5;
+          }
+          if (description.includes(query) && score < 100) {
+            score += 2;
+          }
+          if (id.includes(query)) {
+            score += 1;
+          }
+        }
+
+        // If no match at all, score is 0
+        if (score === 0) return null;
+
+        return { workspace, score };
+      })
+      .filter((item): item is { workspace: typeof workspacesArray[0]; score: number; } => item !== null)
+      .sort((a, b) => {
+        // Sort by score (descending), then by name (ascending)
+        if (b.score !== a.score) return b.score - a.score;
+        return (a.workspace.name || '').localeCompare(b.workspace.name || '');
+      })
+      .map(item => item.workspace);
+
+    return scoredWorkspaces;
+  })();
 
   // Get selected workspace name
   const selectedWorkspace = workspacesArray.find((w) => w._id === selectedWorkspaceId);
@@ -538,9 +618,10 @@ export const HierarchyViewer = ({ onNext }: HierarchyViewerProps) => {
         </CardHeader>
         <CardContent>
           {loadingWorkspaces ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              <span className="ml-3 text-muted-foreground">Loading workspaces...</span>
+            <div className="space-y-3 py-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : workspacesError ? (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
@@ -692,9 +773,9 @@ export const HierarchyViewer = ({ onNext }: HierarchyViewerProps) => {
           </CardHeader>
           <CardContent>
             {loadingDomains ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Loading domains...</span>
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
               </div>
             ) : domainsError ? (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
@@ -808,9 +889,9 @@ export const HierarchyViewer = ({ onNext }: HierarchyViewerProps) => {
           </CardHeader>
           <CardContent>
             {loadingInitiatives ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Loading initiatives...</span>
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
               </div>
             ) : initiativesError ? (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
@@ -929,9 +1010,10 @@ export const HierarchyViewer = ({ onNext }: HierarchyViewerProps) => {
           </CardHeader>
           <CardContent>
             {loadingHierarchy ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Loading hierarchy...</span>
+              <div className="space-y-3 py-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
               </div>
             ) : hierarchyError ? (
               <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
