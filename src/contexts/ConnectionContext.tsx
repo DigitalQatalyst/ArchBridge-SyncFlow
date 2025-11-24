@@ -21,6 +21,7 @@ interface ConnectionContextType {
   targetType: string;
   targetCredentials: TargetCredentials;
   targetConnected: boolean;
+  targetConfigId?: string; // Azure DevOps configuration ID
   setSourceType: (type: string) => void;
   setSourceCredentials: (credentials: SourceCredentials) => void;
   setSourceConnected: (connected: boolean) => void;
@@ -28,6 +29,7 @@ interface ConnectionContextType {
   setTargetType: (type: string) => void;
   setTargetCredentials: (credentials: TargetCredentials) => void;
   setTargetConnected: (connected: boolean) => void;
+  setTargetConfigId: (configId: string | undefined) => void;
   resetConnection: () => void;
 }
 
@@ -41,6 +43,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const [targetType, setTargetType] = useState<string>('');
   const [targetCredentials, setTargetCredentials] = useState<TargetCredentials>({});
   const [targetConnected, setTargetConnected] = useState<boolean>(false);
+  const [targetConfigId, setTargetConfigId] = useState<string | undefined>(undefined);
 
   const resetConnection = () => {
     setSourceType('');
@@ -50,6 +53,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
     setTargetType('');
     setTargetCredentials({});
     setTargetConnected(false);
+    setTargetConfigId(undefined);
   };
 
   return (
@@ -62,6 +66,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         targetType,
         targetCredentials,
         targetConnected,
+        targetConfigId,
         setSourceType,
         setSourceCredentials,
         setSourceConnected,
@@ -69,6 +74,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         setTargetType,
         setTargetCredentials,
         setTargetConnected,
+        setTargetConfigId,
         resetConnection,
       }}
     >

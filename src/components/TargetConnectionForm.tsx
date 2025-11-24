@@ -1,56 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AlertCircle, CheckCircle, Loader2, Settings } from 'lucide-react';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+  useAzureDevOpsConfigurations,
+  useTestAzureDevOpsConnection,
+  useActivateAzureDevOpsConfiguration,
+  useActiveAzureDevOpsConfiguration,
+} from '@/hooks/useAzureDevOps';
 
 interface TargetConnectionFormProps {
   onNext: () => void;
 }
 
 export const TargetConnectionForm = ({ onNext }: TargetConnectionFormProps) => {
-  const { targetType, targetCredentials, setTargetCredentials, setTargetConnected } = useConnection();
+  const { targetType, targetConfigId, setTargetConfigId, setTargetConnected } = useConnection();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [testing, setTesting] = useState(false);
+  const [activating, setActivating] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [justActivated, setJustActivated] = useState(false);
 
-  const [formData, setFormData] = useState({
-    organizationUrl: targetCredentials.organizationUrl || '',
-    projectName: targetCredentials.projectName || '',
-    personalAccessToken: targetCredentials.personalAccessToken || '',
-  });
+  // Track the original active configuration when component loads
+  const { data: initialActiveConfig } = useActiveAzureDevOpsConfiguration();
+  const originalActiveConfigIdRef = useRef<string | undefined>(undefined);
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { data: configurations, isLoading } = useAzureDevOpsConfigurations();
+  const testMutation = useTestAzureDevOpsConnection();
+  const activateMutation = useActivateAzureDevOpsConfiguration();
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.organizationUrl.trim()) {
-      newErrors.organizationUrl = 'Organization URL is required';
-    } else if (!formData.organizationUrl.startsWith('http')) {
-      newErrors.organizationUrl = 'Please enter a valid URL';
+  // Store the original active config ID when component mounts
+  useEffect(() => {
+    if (initialActiveConfig && !originalActiveConfigIdRef.current) {
+      originalActiveConfigIdRef.current = initialActiveConfig.id;
     }
-    
-    if (!formData.projectName.trim()) {
-      newErrors.projectName = 'Project Name is required';
-    }
-    
-    if (!formData.personalAccessToken.trim()) {
-      newErrors.personalAccessToken = 'Personal Access Token is required';
-    }
+  }, [initialActiveConfig]);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Filter only tested and passed configurations
+  const testedConfigurations = configurations?.filter(
+    (config) => config.isTested && config.testPassed
+  ) || [];
+
+  const selectedConfig = configurations?.find((config) => config.id === targetConfigId);
+  const hasMultipleConfigs = testedConfigurations.length > 1;
 
   const handleTestConnection = async () => {
-    if (!validateForm()) {
+    if (!targetConfigId) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields correctly.',
+        title: 'No Configuration Selected',
+        description: 'Please select an Azure DevOps configuration first.',
         variant: 'destructive',
       });
       return;
@@ -59,146 +68,277 @@ export const TargetConnectionForm = ({ onNext }: TargetConnectionFormProps) => {
     setTesting(true);
     setTestResult(null);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const result = await testMutation.mutateAsync(targetConfigId);
 
-    // Simulate success (90% of the time)
-    const success = Math.random() > 0.1;
+      if (result.configuration.testPassed) {
+        setTestResult('success');
+        setTargetConnected(true);
+        setJustActivated(false); // Clear activation flag on successful test
+        toast({
+          title: 'Connection Test Passed',
+          description: 'Successfully connected to Azure DevOps',
+        });
+      } else {
+        // Test failed - revert to original active configuration if we switched
+        setTestResult('error');
+        setTargetConnected(false);
 
-    if (success) {
-      setTestResult('success');
-      setTargetCredentials(formData);
-      setTargetConnected(true);
-      toast({
-        title: 'Connection Successful',
-        description: 'Successfully connected to Azure DevOps project.',
-      });
-    } else {
+        // Revert to original active config if we had one and switched away
+        if (
+          originalActiveConfigIdRef.current &&
+          targetConfigId !== originalActiveConfigIdRef.current
+        ) {
+          try {
+            await activateMutation.mutateAsync(originalActiveConfigIdRef.current);
+            setTargetConfigId(originalActiveConfigIdRef.current);
+            setJustActivated(false);
+            toast({
+              title: 'Reverted to Original Configuration',
+              description: 'Configuration has been reverted to the previously active one.',
+            });
+          } catch (revertError) {
+            console.error('Failed to revert to original configuration:', revertError);
+          }
+        }
+
+        toast({
+          title: 'Connection Test Failed',
+          description: result.configuration.testError || 'Connection test failed',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
       setTestResult('error');
       setTargetConnected(false);
+
+      // Revert to original active config on error
+      if (
+        originalActiveConfigIdRef.current &&
+        targetConfigId !== originalActiveConfigIdRef.current
+      ) {
+        try {
+          await activateMutation.mutateAsync(originalActiveConfigIdRef.current);
+          setTargetConfigId(originalActiveConfigIdRef.current);
+          setJustActivated(false);
+          toast({
+            title: 'Reverted to Original Configuration',
+            description: 'Configuration has been reverted due to test error.',
+          });
+        } catch (revertError) {
+          console.error('Failed to revert to original configuration:', revertError);
+        }
+      }
+
       toast({
-        title: 'Connection Failed',
-        description: 'Unable to connect to Azure DevOps. Please check your credentials.',
+        title: 'Connection Test Failed',
+        description: error instanceof Error ? error.message : 'Failed to test connection',
         variant: 'destructive',
       });
+    } finally {
+      setTesting(false);
     }
-
-    setTesting(false);
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-    setErrors({ ...errors, [field]: '' });
+  const handleConfigChange = async (configId: string) => {
+    const newConfig = configurations?.find((config) => config.id === configId);
+
+    if (!newConfig) {
+      return;
+    }
+
+    // Reset test result and connection status
     setTestResult(null);
+    setTargetConnected(false);
+    setJustActivated(false);
+    setTargetConfigId(configId);
+
+    // If there are multiple configs and the selected one is not active, activate it
+    if (hasMultipleConfigs && !newConfig.isActive && newConfig.testPassed) {
+      setActivating(true);
+      setJustActivated(true);
+      try {
+        await activateMutation.mutateAsync(configId);
+        toast({
+          title: 'Configuration Activated',
+          description: `${newConfig.name} has been activated. Please test the connection before proceeding.`,
+        });
+      } catch (error) {
+        setJustActivated(false);
+        toast({
+          title: 'Activation Failed',
+          description: error instanceof Error ? error.message : 'Failed to activate configuration',
+          variant: 'destructive',
+        });
+        // Revert selection on activation failure
+        if (originalActiveConfigIdRef.current) {
+          setTargetConfigId(originalActiveConfigIdRef.current);
+        }
+      } finally {
+        setActivating(false);
+      }
+    } else {
+      setJustActivated(false);
+    }
   };
 
   const handleContinue = () => {
-    if (testResult === 'success') {
+    // Require test to pass before continuing, even if config was already tested
+    if (testResult === 'success' && targetConfigId) {
       onNext();
+    } else if (targetConfigId && selectedConfig?.testPassed && selectedConfig?.isTested) {
+      // If config is already tested but user hasn't tested in this session, require test
+      toast({
+        title: 'Test Required',
+        description: 'Please test the connection before proceeding.',
+        variant: 'destructive',
+      });
     }
   };
+
+  const handleConfigure = () => {
+    navigate('/configurations/azure-devops');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Connect to {targetType}</h2>
+          <p className="text-muted-foreground">
+            Select an Azure DevOps configuration to establish a connection.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="py-8">
+            <div className="flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-foreground mb-2">Connect to {targetType}</h2>
         <p className="text-muted-foreground">
-          Enter your Azure DevOps credentials to establish a connection.
+          Select a tested Azure DevOps configuration to establish a connection.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Connection Details</CardTitle>
+          <CardTitle>Select Configuration</CardTitle>
           <CardDescription>
-            All credentials are stored securely and never shared.
+            Choose from your tested Azure DevOps configurations. If you select a non-active configuration, it will be activated automatically and you must test the connection before proceeding.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="organizationUrl">Organization URL *</Label>
-            <Input
-              id="organizationUrl"
-              type="url"
-              placeholder="https://dev.azure.com/your-organization"
-              value={formData.organizationUrl}
-              onChange={(e) => handleInputChange('organizationUrl', e.target.value)}
-              className={errors.organizationUrl ? 'border-destructive' : ''}
-            />
-            {errors.organizationUrl && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.organizationUrl}
+          {testedConfigurations.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-6 text-center">
+              <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground mb-4">
+                No tested configurations found. Please create and test an Azure DevOps configuration first.
               </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="projectName">Project Name *</Label>
-            <Input
-              id="projectName"
-              type="text"
-              placeholder="Your project name"
-              value={formData.projectName}
-              onChange={(e) => handleInputChange('projectName', e.target.value)}
-              className={errors.projectName ? 'border-destructive' : ''}
-            />
-            {errors.projectName && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.projectName}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="personalAccessToken">Personal Access Token *</Label>
-            <Input
-              id="personalAccessToken"
-              type="password"
-              placeholder="Enter your Azure DevOps PAT"
-              value={formData.personalAccessToken}
-              onChange={(e) => handleInputChange('personalAccessToken', e.target.value)}
-              className={errors.personalAccessToken ? 'border-destructive' : ''}
-            />
-            {errors.personalAccessToken && (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.personalAccessToken}
-              </p>
-            )}
-          </div>
-
-          <div className="pt-4">
-            <Button
-              onClick={handleTestConnection}
-              disabled={testing}
-              variant="outline"
-              className="w-full"
-            >
-              {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {testing ? 'Testing Connection...' : 'Test Connection'}
-            </Button>
-          </div>
-
-          {testResult === 'success' && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-success/10 text-success">
-              <CheckCircle className="w-5 h-5" />
-              <p className="text-sm font-medium">Connection successful!</p>
+              <Button onClick={handleConfigure}>
+                Go to Configurations
+              </Button>
             </div>
-          )}
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Azure DevOps Configuration *</label>
+                <Select
+                  value={targetConfigId || ''}
+                  onValueChange={handleConfigChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a configuration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {testedConfigurations.map((config) => (
+                      <SelectItem key={config.id} value={config.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{config.name}</span>
+                          {config.isActive && (
+                            <span className="ml-2 text-xs text-muted-foreground">(Active)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedConfig && (
+                  <div className="text-sm text-muted-foreground mt-2 space-y-1">
+                    <p>Organization: {selectedConfig.organization}</p>
+                  </div>
+                )}
+              </div>
 
-          {testResult === 'error' && (
-            <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive">
-              <AlertCircle className="w-5 h-5" />
-              <p className="text-sm font-medium">Connection failed. Please check your credentials.</p>
-            </div>
+              {activating && (
+                <div className="pt-4">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Activating configuration...</span>
+                  </div>
+                </div>
+              )}
+
+              {!activating && (
+                <div className="pt-4">
+                  <Button
+                    onClick={handleTestConnection}
+                    disabled={testing || !targetConfigId || activating}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {testing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {testing ? 'Testing Connection...' : 'Test Connection'}
+                  </Button>
+                  {justActivated && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Configuration has been activated. Please test the connection before proceeding.
+                    </p>
+                  )}
+                  {!justActivated && hasMultipleConfigs && selectedConfig && testResult === null && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Please test the connection before proceeding.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {testResult === 'success' && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300">
+                  <CheckCircle className="w-5 h-5" />
+                  <p className="text-sm font-medium">Connection successful!</p>
+                </div>
+              )}
+
+              {testResult === 'error' && (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 text-destructive">
+                  <AlertCircle className="w-5 h-5" />
+                  <p className="text-sm font-medium">Connection failed. Please check your configuration.</p>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button onClick={handleContinue} disabled={testResult !== 'success'} size="lg">
+      <div className="flex justify-between">
+        <Button variant="outline" onClick={handleConfigure}>
+          <Settings className="w-4 h-4 mr-2" />
+          Manage Configurations
+        </Button>
+        <Button
+          onClick={handleContinue}
+          disabled={testResult !== 'success' || !targetConfigId || activating}
+          size="lg"
+        >
           Continue to Hierarchy Selection
         </Button>
       </div>

@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Workflow from "./pages/Workflow";
 import Configurations from "./pages/Configurations";
 import ArdoqConfiguration from "./pages/ArdoqConfiguration";
+import AzureDevOpsConfiguration from "./pages/AzureDevOpsConfiguration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/workflow" element={<Workflow />} />
           <Route path="/configurations" element={<Configurations />} />
           <Route path="/configurations/ardoq" element={<ArdoqConfiguration />} />
+          <Route path="/configurations/azure-devops" element={<AzureDevOpsConfiguration />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

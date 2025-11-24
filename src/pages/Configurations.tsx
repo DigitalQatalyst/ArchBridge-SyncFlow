@@ -1,15 +1,21 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { ConfigurationCard } from '@/components/ConfigurationCard';
 import { useActiveArdoqConfiguration } from '@/hooks/useArdoq';
+import { useActiveAzureDevOpsConfiguration } from '@/hooks/useAzureDevOps';
 import { Button } from '@/components/ui/button';
 import { Settings, ArrowBigUp } from 'lucide-react';
 
 export default function Configurations() {
   const navigate = useNavigate();
   const { data: activeArdoqConfig } = useActiveArdoqConfiguration();
+  const { data: activeAzureDevOpsConfig } = useActiveAzureDevOpsConfiguration();
 
   const handleArdoqClick = () => {
     navigate('/configurations/ardoq');
+  };
+
+  const handleAzureDevOpsClick = () => {
+    navigate('/configurations/azure-devops');
   };
 
   return (
@@ -49,6 +55,15 @@ export default function Configurations() {
             isActive={activeArdoqConfig?.isActive || false}
             activeConfigName={activeArdoqConfig?.name}
             onClick={handleArdoqClick}
+          />
+          <ConfigurationCard
+            name="Azure DevOps"
+            description="Azure DevOps Services and Team Foundation Server"
+            icon={<Settings className="h-6 w-6 text-primary" />}
+            isConfigured={!!activeAzureDevOpsConfig}
+            isActive={activeAzureDevOpsConfig?.isActive || false}
+            activeConfigName={activeAzureDevOpsConfig?.name}
+            onClick={handleAzureDevOpsClick}
           />
           {/* Future system cards can be added here */}
         </div>
