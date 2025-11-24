@@ -4,7 +4,7 @@ import { useActiveArdoqConfiguration } from '@/hooks/useArdoq';
 import { useActiveAzureDevOpsConfiguration } from '@/hooks/useAzureDevOps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Settings, ArrowBigUp } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Configurations() {
@@ -27,9 +27,11 @@ export default function Configurations() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <ArrowBigUp className="w-6 h-6 text-primary rotate-90" />
-              </div>
+              <img
+                src="/Archbridge-logo.png"
+                alt="ArchBridge Logo"
+                className="h-10 w-auto"
+              />
               <div>
                 <h1 className="text-2xl font-bold text-foreground">System Configurations</h1>
                 <p className="text-sm text-muted-foreground">

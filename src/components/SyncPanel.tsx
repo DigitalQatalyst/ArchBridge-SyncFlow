@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, AlertCircle, ArrowRight, ExternalLink, X, Copy, Sparkles, Trophy, Clock, Package, Layers, FileText, Zap, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle, ExternalLink, X, Copy, Sparkles, Trophy, Clock, Package, Layers, FileText, Zap, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSync, HierarchyItem } from '@/contexts/SyncContext';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { Progress } from '@/components/ui/progress';
@@ -370,11 +370,11 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
 
                 const getColorClass = (itemType: string): string => {
                   if (itemType === 'epic') {
-                    return 'from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300';
-                  } else if (itemType === 'feature') {
                     return 'from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300';
+                  } else if (itemType === 'feature') {
+                    return 'from-blue-50 via-purple-50 to-orange-50 dark:from-blue-950 dark:via-purple-950 dark:to-orange-950 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300';
                   } else {
-                    return 'from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300';
+                    return 'from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300';
                   }
                 };
 
@@ -528,24 +528,24 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
                     <div className="space-y-3">
                       <h5 className="text-sm font-semibold text-foreground">Breakdown by Type:</h5>
                       <div className="grid grid-cols-3 gap-4">
-                        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-2 border-purple-200 dark:border-purple-800 p-4 text-center transition-smooth hover:shadow-lg hover:scale-105">
-                          <Layers className="w-6 h-6 text-purple-600 dark:text-purple-400 mx-auto mb-2" />
-                          <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">{summary.epics.created}</p>
-                          <p className="text-xs font-medium text-purple-600 dark:text-purple-400 mt-1">Epics</p>
-                        </div>
                         <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-2 border-blue-200 dark:border-blue-800 p-4 text-center transition-smooth hover:shadow-lg hover:scale-105">
+                          <Layers className="w-6 h-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{summary.epics.created}</p>
+                          <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-1">Epics</p>
+                        </div>
+                        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-blue-50 via-purple-50 to-orange-50 dark:from-blue-950 dark:via-purple-950 dark:to-orange-950 border-2 border-blue-200 dark:border-blue-800 p-4 text-center transition-smooth hover:shadow-lg hover:scale-105">
                           <Package className="w-6 h-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                           <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                             {summary.features.created}
                           </p>
                           <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-1">Features</p>
                         </div>
-                        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-2 border-green-200 dark:border-green-800 p-4 text-center transition-smooth hover:shadow-lg hover:scale-105">
-                          <FileText className="w-6 h-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
-                          <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-2 border-orange-200 dark:border-orange-800 p-4 text-center transition-smooth hover:shadow-lg hover:scale-105">
+                          <FileText className="w-6 h-6 text-orange-600 dark:text-orange-400 mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
                             {summary.userStories.created}
                           </p>
-                          <p className="text-xs font-medium text-green-600 dark:text-green-400 mt-1">User Stories</p>
+                          <p className="text-xs font-medium text-orange-600 dark:text-orange-400 mt-1">User Stories</p>
                         </div>
                       </div>
                     </div>
@@ -561,15 +561,15 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
                     <h4 className="font-semibold text-lg text-foreground">Sync Statistics</h4>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 border-2 border-purple-200 dark:border-purple-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
-                      <div className="absolute top-2 right-2 w-16 h-16 bg-purple-200 dark:bg-purple-800 rounded-full blur-2xl opacity-30"></div>
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-2 border-blue-200 dark:border-blue-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
+                      <div className="absolute top-2 right-2 w-16 h-16 bg-blue-200 dark:bg-blue-800 rounded-full blur-2xl opacity-30"></div>
                       <div className="relative">
-                        <Layers className="w-8 h-8 text-purple-600 dark:text-purple-400 mx-auto mb-3" />
-                        <p className="text-4xl font-bold text-purple-700 dark:text-purple-300">{summary.epics?.created || 0}</p>
-                        <p className="text-sm font-semibold text-purple-600 dark:text-purple-400 mt-2">Epics</p>
+                        <Layers className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-3" />
+                        <p className="text-4xl font-bold text-blue-700 dark:text-blue-300">{summary.epics?.created || 0}</p>
+                        <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-2">Epics</p>
                       </div>
                     </div>
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-2 border-blue-200 dark:border-blue-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-purple-50 to-orange-50 dark:from-blue-950 dark:via-purple-950 dark:to-orange-950 border-2 border-blue-200 dark:border-blue-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
                       <div className="absolute top-2 right-2 w-16 h-16 bg-blue-200 dark:bg-blue-800 rounded-full blur-2xl opacity-30"></div>
                       <div className="relative">
                         <Package className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-3" />
@@ -577,12 +577,12 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
                         <p className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-2">Features</p>
                       </div>
                     </div>
-                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-2 border-green-200 dark:border-green-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
-                      <div className="absolute top-2 right-2 w-16 h-16 bg-green-200 dark:bg-green-800 rounded-full blur-2xl opacity-30"></div>
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 border-2 border-orange-200 dark:border-orange-800 p-6 text-center transition-smooth hover:shadow-xl hover:scale-105">
+                      <div className="absolute top-2 right-2 w-16 h-16 bg-orange-200 dark:bg-orange-800 rounded-full blur-2xl opacity-30"></div>
                       <div className="relative">
-                        <FileText className="w-8 h-8 text-green-600 dark:text-green-400 mx-auto mb-3" />
-                        <p className="text-4xl font-bold text-green-700 dark:text-green-300">{summary.userStories?.created || 0}</p>
-                        <p className="text-sm font-semibold text-green-600 dark:text-green-400 mt-2">User Stories</p>
+                        <FileText className="w-8 h-8 text-orange-600 dark:text-orange-400 mx-auto mb-3" />
+                        <p className="text-4xl font-bold text-orange-700 dark:text-orange-300">{summary.userStories?.created || 0}</p>
+                        <p className="text-sm font-semibold text-orange-600 dark:text-orange-400 mt-2">User Stories</p>
                       </div>
                     </div>
                   </div>
