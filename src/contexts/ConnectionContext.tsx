@@ -23,6 +23,7 @@ interface ConnectionContextType {
   targetConnected: boolean;
   targetConfigId?: string; // Azure DevOps configuration ID
   projectName?: string; // Created Azure DevOps project name
+  overwriteMode?: boolean; // Whether to overwrite existing work items
   setSourceType: (type: string) => void;
   setSourceCredentials: (credentials: SourceCredentials) => void;
   setSourceConnected: (connected: boolean) => void;
@@ -32,6 +33,7 @@ interface ConnectionContextType {
   setTargetConnected: (connected: boolean) => void;
   setTargetConfigId: (configId: string | undefined) => void;
   setProjectName: (name: string | undefined) => void;
+  setOverwriteMode: (overwrite: boolean | undefined) => void;
   resetConnection: () => void;
 }
 
@@ -47,6 +49,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const [targetConnected, setTargetConnected] = useState<boolean>(false);
   const [targetConfigId, setTargetConfigId] = useState<string | undefined>(undefined);
   const [projectName, setProjectName] = useState<string | undefined>(undefined);
+  const [overwriteMode, setOverwriteMode] = useState<boolean | undefined>(undefined);
 
   const resetConnection = () => {
     setSourceType('');
@@ -58,6 +61,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
     setTargetConnected(false);
     setTargetConfigId(undefined);
     setProjectName(undefined);
+    setOverwriteMode(undefined);
   };
 
   return (
@@ -72,6 +76,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         targetConnected,
         targetConfigId,
         projectName,
+        overwriteMode,
         setSourceType,
         setSourceCredentials,
         setSourceConnected,
@@ -81,6 +86,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         setTargetConnected,
         setTargetConfigId,
         setProjectName,
+        setOverwriteMode,
         resetConnection,
       }}
     >

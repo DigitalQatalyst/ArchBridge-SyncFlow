@@ -149,7 +149,14 @@ const ProgressNode = ({
 
 export const SyncPanel = () => {
   const { selectedHierarchyItems, hierarchyData, resetSync } = useSync();
-  const { sourceType, targetType, projectName, targetConfigId, resetConnection } = useConnection();
+  const {
+    sourceType,
+    targetType,
+    projectName,
+    targetConfigId,
+    overwriteMode,
+    resetConnection,
+  } = useConnection();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
@@ -161,6 +168,7 @@ export const SyncPanel = () => {
     itemProgress,
     summary,
     error: syncError,
+    deletionProgress,
     sync,
     cancel,
     reset,
@@ -206,7 +214,7 @@ export const SyncPanel = () => {
 
     try {
       const syncRequest = transformHierarchyToSyncFormat(hierarchyData, selectedHierarchyItems);
-      await sync(projectName, syncRequest, targetConfigId);
+      await sync(projectName, syncRequest, targetConfigId, overwriteMode);
     } catch (error) {
       toast({
         title: 'Sync Failed',
@@ -406,7 +414,48 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
             </div>
           </div>
 
-          {isSyncing && (
+          {deletionProgress?.isDeleting && (
+            <div className="space-y-3 p-4 bg-orange-50 dark:bg-orange-950 rounded-lg border border-orange-200 dark:border-orange-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-orange-600 dark:text-orange-400" />
+                  <p className="text-sm font-medium text-orange-700 dark:text-orange-300">
+                    Deleting existing work items...
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={cancel}>
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
+              {deletionProgress.total > 0 && (
+                <>
+                  <Progress
+                    value={(deletionProgress.deleted / deletionProgress.total) * 100}
+                    className="h-2 transition-all duration-300"
+                  />
+                  <div className="flex items-center justify-between text-xs text-orange-600 dark:text-orange-400">
+                    <span>
+                      Deleted {deletionProgress.deleted} of {deletionProgress.total} work items
+                    </span>
+                    {deletionProgress.totalChunks > 0 && (
+                      <span>
+                        Chunk {deletionProgress.currentChunk} of {deletionProgress.totalChunks}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+              {deletionProgress.error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{deletionProgress.error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {isSyncing && !deletionProgress?.isDeleting && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

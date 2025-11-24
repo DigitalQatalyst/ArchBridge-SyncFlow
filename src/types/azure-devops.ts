@@ -118,7 +118,13 @@ export type SyncEventType =
   | 'feature:failed'
   | 'userstory:failed'
   | 'sync:complete'
-  | 'sync:error';
+  | 'sync:error'
+  | 'overwrite:started'
+  | 'overwrite:deleting'
+  | 'overwrite:progress'
+  | 'overwrite:deleted'
+  | 'overwrite:no-items'
+  | 'overwrite:error';
 
 export interface SyncSuccessEventData {
   ardoqId: string;
@@ -154,9 +160,56 @@ export interface SyncErrorEventData {
   timestamp: string;
 }
 
+export interface OverwriteStartedEventData {
+  message: string;
+  timestamp: string;
+}
+
+export interface OverwriteDeletingEventData {
+  message: string;
+  count: number;
+  timestamp: string;
+}
+
+export interface OverwriteProgressEventData {
+  message: string;
+  deleted: number;
+  total: number;
+  currentChunk: number;
+  totalChunks: number;
+  timestamp: string;
+}
+
+export interface OverwriteDeletedEventData {
+  message: string;
+  count: number;
+  timestamp: string;
+}
+
+export interface OverwriteNoItemsEventData {
+  message: string;
+  timestamp: string;
+}
+
+export interface OverwriteErrorEventData {
+  error: string;
+  message: string;
+  timestamp: string;
+}
+
 export interface SyncEvent {
   type: SyncEventType;
-  data: SyncSuccessEventData | SyncFailureEventData | SyncCompleteEventData | SyncErrorEventData;
+  data:
+    | SyncSuccessEventData
+    | SyncFailureEventData
+    | SyncCompleteEventData
+    | SyncErrorEventData
+    | OverwriteStartedEventData
+    | OverwriteDeletingEventData
+    | OverwriteProgressEventData
+    | OverwriteDeletedEventData
+    | OverwriteNoItemsEventData
+    | OverwriteErrorEventData;
 }
 
 // Work Item Sync Request Types
@@ -188,5 +241,12 @@ export interface UserStorySyncItem {
 
 export interface SyncWorkItemsRequest {
   epics: EpicSyncItem[];
+}
+
+// Work Items Check Types
+export interface WorkItemsCheckResponse {
+  hasWorkItems: boolean;
+  count: number;
+  workItemIds: number[];
 }
 

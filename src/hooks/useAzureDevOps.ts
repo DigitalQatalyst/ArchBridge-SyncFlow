@@ -8,6 +8,7 @@ import type {
   CreateProjectRequest,
   CreateProjectResponse,
   ProcessTemplate,
+  Project,
   SyncWorkItemsRequest,
   SyncEvent,
   SyncSuccessEventData,
@@ -15,6 +16,9 @@ import type {
   SyncCompleteEventData,
   SyncErrorEventData,
   SyncSummary,
+  WorkItemsCheckResponse,
+  OverwriteProgressEventData,
+  OverwriteErrorEventData,
 } from '@/types/azure-devops';
 
 // Query Keys
@@ -205,6 +209,37 @@ export function useCreateAzureDevOpsProject() {
   });
 }
 
+export function useListAzureDevOpsProjects(configId?: string) {
+  return useQuery({
+    queryKey: [...azureDevOpsKeys.all, 'projects', configId],
+    queryFn: async () => {
+      const response = await azureDevOpsApi.listProjects(configId);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch projects');
+      }
+      return response.data;
+    },
+    enabled: !!configId,
+  });
+}
+
+export function useCheckWorkItems(projectName: string | undefined, configId?: string) {
+  return useQuery({
+    queryKey: [...azureDevOpsKeys.all, 'work-items-check', projectName, configId],
+    queryFn: async () => {
+      if (!projectName) {
+        throw new Error('Project name is required');
+      }
+      const response = await azureDevOpsApi.checkWorkItems(projectName, configId);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to check work items');
+      }
+      return response.data;
+    },
+    enabled: !!projectName && !!configId,
+  });
+}
+
 // Sync Hooks
 
 export type ItemStatus = 'pending' | 'creating' | 'created' | 'failed';
@@ -218,11 +253,21 @@ export interface ItemProgress {
   error?: string;
 }
 
+export interface DeletionProgress {
+  isDeleting: boolean;
+  total: number;
+  deleted: number;
+  currentChunk: number;
+  totalChunks: number;
+  error: string | null;
+}
+
 export interface SyncProgressState {
   isSyncing: boolean;
   itemProgress: Map<string, ItemProgress>;
   summary: SyncSummary | null;
   error: string | null;
+  deletionProgress: DeletionProgress | null;
 }
 
 export function useSyncAzureDevOpsWorkItems() {
@@ -231,6 +276,7 @@ export function useSyncAzureDevOpsWorkItems() {
     itemProgress: new Map(),
     summary: null,
     error: null,
+    deletionProgress: null,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -239,7 +285,8 @@ export function useSyncAzureDevOpsWorkItems() {
     async (
       projectName: string,
       request: SyncWorkItemsRequest,
-      configId: string | undefined
+      configId: string | undefined,
+      overwrite?: boolean
     ) => {
       // Reset state
       setState({
@@ -247,6 +294,7 @@ export function useSyncAzureDevOpsWorkItems() {
         itemProgress: new Map(),
         summary: null,
         error: null,
+        deletionProgress: null,
       });
 
       // Create abort controller for cancellation
@@ -262,6 +310,86 @@ export function useSyncAzureDevOpsWorkItems() {
               setState((prev) => {
                 const newProgress = new Map(prev.itemProgress);
 
+                // Handle overwrite/deletion events
+                if (event.type === 'overwrite:started') {
+                  return {
+                    ...prev,
+                    deletionProgress: {
+                      isDeleting: true,
+                      total: 0,
+                      deleted: 0,
+                      currentChunk: 0,
+                      totalChunks: 0,
+                      error: null,
+                    },
+                  };
+                } else if (event.type === 'overwrite:deleting') {
+                  const data = event.data as { count: number };
+                  return {
+                    ...prev,
+                    deletionProgress: {
+                      isDeleting: true,
+                      total: data.count,
+                      deleted: 0,
+                      currentChunk: 0,
+                      totalChunks: Math.ceil(data.count / 20),
+                      error: null,
+                    },
+                  };
+                } else if (event.type === 'overwrite:progress') {
+                  const data = event.data as OverwriteProgressEventData;
+                  return {
+                    ...prev,
+                    deletionProgress: {
+                      isDeleting: true,
+                      total: data.total,
+                      deleted: data.deleted,
+                      currentChunk: data.currentChunk,
+                      totalChunks: data.totalChunks,
+                      error: null,
+                    },
+                  };
+                } else if (event.type === 'overwrite:deleted') {
+                  return {
+                    ...prev,
+                    deletionProgress: {
+                      isDeleting: false,
+                      total: prev.deletionProgress?.total || 0,
+                      deleted: prev.deletionProgress?.total || 0,
+                      currentChunk: prev.deletionProgress?.totalChunks || 0,
+                      totalChunks: prev.deletionProgress?.totalChunks || 0,
+                      error: null,
+                    },
+                  };
+                } else if (event.type === 'overwrite:no-items') {
+                  return {
+                    ...prev,
+                    deletionProgress: {
+                      isDeleting: false,
+                      total: 0,
+                      deleted: 0,
+                      currentChunk: 0,
+                      totalChunks: 0,
+                      error: null,
+                    },
+                  };
+                } else if (event.type === 'overwrite:error') {
+                  const data = event.data as OverwriteErrorEventData;
+                  return {
+                    ...prev,
+                    isSyncing: false,
+                    deletionProgress: prev.deletionProgress
+                      ? {
+                          ...prev.deletionProgress,
+                          isDeleting: false,
+                          error: data.error,
+                        }
+                      : null,
+                    error: data.error,
+                  };
+                }
+
+                // Handle work item creation events
                 if (
                   event.type === 'epic:created' ||
                   event.type === 'feature:created' ||
@@ -293,6 +421,7 @@ export function useSyncAzureDevOpsWorkItems() {
                     ...prev,
                     isSyncing: false,
                     summary: data.summary,
+                    deletionProgress: null, // Clear deletion progress after sync completes
                   };
                 } else if (event.type === 'sync:error') {
                   const data = event.data as SyncErrorEventData;
@@ -322,7 +451,8 @@ export function useSyncAzureDevOpsWorkItems() {
                 isSyncing: false,
               }));
             },
-          }
+          },
+          overwrite
         );
       } catch (error) {
         setState((prev) => ({
@@ -351,6 +481,7 @@ export function useSyncAzureDevOpsWorkItems() {
       itemProgress: new Map(),
       summary: null,
       error: null,
+      deletionProgress: null,
     });
   }, []);
 

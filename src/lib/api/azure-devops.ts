@@ -8,9 +8,11 @@ import type {
   CreateProjectRequest,
   CreateProjectResponse,
   ProcessTemplate,
+  Project,
   SyncWorkItemsRequest,
   SyncEvent,
   SyncEventType,
+  WorkItemsCheckResponse,
 } from '@/types/azure-devops';
 
 // Get API base URL from environment variable or default to localhost:3000
@@ -204,6 +206,29 @@ export const azureDevOpsApi = {
   },
 
   /**
+   * List all projects in the Azure DevOps organization
+   */
+  listProjects: async (
+    configId?: string
+  ): Promise<ApiResponse<Project[]>> => {
+    const query = buildQueryString(configId ? { configId } : undefined);
+    return fetchApi<Project[]>(`/projects${query}`);
+  },
+
+  /**
+   * Check if a project has existing work items
+   */
+  checkWorkItems: async (
+    projectName: string,
+    configId?: string
+  ): Promise<ApiResponse<WorkItemsCheckResponse>> => {
+    const query = buildQueryString(configId ? { configId } : undefined);
+    return fetchApi<WorkItemsCheckResponse>(
+      `/projects/${encodeURIComponent(projectName)}/workitems/check${query}`
+    );
+  },
+
+  /**
    * Sync work items using Server-Sent Events (SSE)
    * This method streams progress updates in real-time
    */
@@ -215,9 +240,13 @@ export const azureDevOpsApi = {
       onEvent?: (event: SyncEvent) => void;
       onError?: (error: Error) => void;
       onComplete?: () => void;
-    }
+    },
+    overwrite?: boolean
   ): Promise<void> => {
-    const query = buildQueryString(configId ? { configId } : undefined);
+    const queryParams: Record<string, string | undefined> = {};
+    if (configId) queryParams.configId = configId;
+    if (overwrite) queryParams.overwrite = 'true';
+    const query = buildQueryString(queryParams);
     const url = `${API_BASE_URL}${API_PREFIX}/projects/${encodeURIComponent(projectName)}/workitems${query}`;
 
     try {
