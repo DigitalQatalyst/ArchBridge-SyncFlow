@@ -366,16 +366,23 @@ Create a new Azure DevOps project in the organization. The project creation is q
   "name": "My New Project",                    // Required - Project name
   "description": "Project description",        // Optional - Project description
   "visibility": "private",                     // Optional - "private" or "public" (default: private)
-  "capabilities": {                            // Optional - Project capabilities
+  "capabilities": {                            // Optional - Project capabilities (defaults to Agile + Git if not provided)
     "processTemplate": {
-      "templateTypeId": "6b724908-ef14-45cf-84f8-768b5384da45"  // Process template ID (e.g., Scrum, Agile, Basic)
+      "templateTypeId": "adcc42ab-9882-485e-a3ed-7676785c7e0f"  // Process template ID (defaults to Agile if not provided)
     },
     "versioncontrol": {
-      "sourceControlType": "Git"               // "Git" or "Tfvc"
+      "sourceControlType": "Git"               // "Git" or "Tfvc" (defaults to Git if not provided)
     }
   }
 }
 ```
+
+**Note:** If `capabilities` is not provided, the project will default to:
+
+- **Process Template**: Agile (`adcc42ab-9882-485e-a3ed-7676785c7e0f`) - Supports Epic, Feature, User Story, Task, and Bug work item types
+- **Version Control**: Git
+
+If `capabilities` is provided but `processTemplate` or `versioncontrol` is missing, those will also default to Agile and Git respectively.
 
 **Response:**
 

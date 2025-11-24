@@ -7,6 +7,9 @@ import type {
   TestConnectionResponse,
   CreateProjectRequest,
   CreateProjectResponse,
+  SyncWorkItemsRequest,
+  SyncEvent,
+  SyncEventType,
 } from '@/types/azure-devops';
 
 // Get API base URL from environment variable or default to localhost:3000
@@ -187,6 +190,98 @@ export const azureDevOpsApi = {
       method: 'POST',
       body: JSON.stringify(project),
     });
+  },
+
+  /**
+   * Sync work items using Server-Sent Events (SSE)
+   * This method streams progress updates in real-time
+   */
+  syncWorkItems: async (
+    projectName: string,
+    request: SyncWorkItemsRequest,
+    configId: string | undefined,
+    callbacks: {
+      onEvent?: (event: SyncEvent) => void;
+      onError?: (error: Error) => void;
+      onComplete?: () => void;
+    }
+  ): Promise<void> => {
+    const query = buildQueryString(configId ? { configId } : undefined);
+    const url = `${API_BASE_URL}${API_PREFIX}/projects/${encodeURIComponent(projectName)}/workitems${query}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is not readable');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let currentEventType: SyncEventType | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          callbacks.onComplete?.();
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+
+          if (line.startsWith('event:')) {
+            currentEventType = line.substring(6).trim() as SyncEventType;
+          } else if (line.startsWith('data:')) {
+            const dataStr = line.substring(5).trim();
+            if (dataStr && currentEventType) {
+              try {
+                const parsedData = JSON.parse(dataStr);
+                // Handle both formats: { type, data } or just { data }
+                const event: SyncEvent = parsedData.type
+                  ? parsedData
+                  : {
+                      type: currentEventType,
+                      data: parsedData.data || parsedData,
+                    };
+                callbacks.onEvent?.(event);
+              } catch (parseError) {
+                console.error('Failed to parse SSE data:', parseError, dataStr);
+              }
+            }
+            currentEventType = null;
+          } else if (line === '') {
+            // Empty line indicates end of event
+            currentEventType = null;
+          }
+        }
+      }
+    } catch (error) {
+      callbacks.onError?.(
+        error instanceof Error ? error : new Error('Unknown error occurred')
+      );
+      throw error;
+    }
   },
 };
 

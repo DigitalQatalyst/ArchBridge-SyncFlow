@@ -100,3 +100,84 @@ export interface CreateProjectResponse {
   };
 }
 
+// Sync Progress Types
+export type SyncEventType =
+  | 'epic:created'
+  | 'feature:created'
+  | 'userstory:created'
+  | 'epic:failed'
+  | 'feature:failed'
+  | 'userstory:failed'
+  | 'sync:complete'
+  | 'sync:error';
+
+export interface SyncSuccessEventData {
+  ardoqId: string;
+  name: string;
+  azureDevOpsId?: number;
+  azureDevOpsUrl?: string;
+  timestamp: string;
+}
+
+export interface SyncFailureEventData {
+  ardoqId: string;
+  name: string;
+  error: string;
+  timestamp: string;
+}
+
+export interface SyncSummary {
+  total: number;
+  created: number;
+  failed: number;
+  epics: { total: number; created: number; failed: number };
+  features: { total: number; created: number; failed: number };
+  userStories: { total: number; created: number; failed: number };
+}
+
+export interface SyncCompleteEventData {
+  summary: SyncSummary;
+  timestamp: string;
+}
+
+export interface SyncErrorEventData {
+  error: string;
+  timestamp: string;
+}
+
+export interface SyncEvent {
+  type: SyncEventType;
+  data: SyncSuccessEventData | SyncFailureEventData | SyncCompleteEventData | SyncErrorEventData;
+}
+
+// Work Item Sync Request Types
+export interface EpicSyncItem {
+  _id: string;
+  name: string;
+  type: string;
+  description?: string;
+  children?: FeatureSyncItem[];
+  [key: string]: any;
+}
+
+export interface FeatureSyncItem {
+  _id: string;
+  name: string;
+  type: string;
+  description?: string;
+  children?: UserStorySyncItem[];
+  [key: string]: any;
+}
+
+export interface UserStorySyncItem {
+  _id: string;
+  name: string;
+  type: string;
+  description?: string;
+  [key: string]: any;
+}
+
+export interface SyncWorkItemsRequest {
+  epics: EpicSyncItem[];
+}
+
