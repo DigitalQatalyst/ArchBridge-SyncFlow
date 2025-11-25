@@ -49,6 +49,20 @@ export interface SyncHistory {
   updated_at: string;
 }
 
+export interface AzureDevOpsIdentityRef {
+  displayName?: string;                // User's display name (e.g., "Dennis Mwangi")
+  uniqueName?: string;                 // User's unique name/email (e.g., "Dennis.Mwangi@DigitalQatalyst.com")
+  id?: string;                         // User's unique ID (e.g., "9650e4c0-699e-600d-a0b5-44b1c8416e57")
+  url?: string;                        // API URL for the user identity
+  imageUrl?: string;                   // URL to user's avatar image
+  descriptor?: string;                 // User's descriptor (e.g., "aad.OTY1MGU0YzAtNjk5ZS03MDBkLWEwYjUtNDRiMWM4NDE2ZTU3")
+  _links?: {                           // Links object
+    avatar?: {
+      href?: string;                   // Avatar image URL
+    };
+  };
+}
+
 export interface SyncHistoryItem {
   id: string;
   sync_history_id: string;
@@ -59,6 +73,7 @@ export interface SyncHistoryItem {
   azure_devops_id?: number;
   azure_devops_url?: string;
   error_message?: string;
+  changed_by_user?: AzureDevOpsIdentityRef; // User who created/changed the work item (from System.ChangedBy)
   created_at: string;
 }
 

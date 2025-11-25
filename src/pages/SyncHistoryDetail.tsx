@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,11 @@ import {
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   ArrowLeft,
   CheckCircle,
   XCircle,
@@ -22,6 +28,8 @@ import {
   Package,
   Layers,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useSyncHistory, useSyncHistoryItems } from '@/hooks/useSyncHistory';
 import { ErrorState } from '@/components/ErrorState';
@@ -61,6 +69,9 @@ function formatDuration(durationMs?: number): string {
 export default function SyncHistoryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['epic', 'feature', 'user_story']) // All sections expanded by default
+  );
 
   const {
     data: syncHistory,
@@ -72,6 +83,18 @@ export default function SyncHistoryDetail() {
     data: itemsData,
     isLoading: itemsLoading,
   } = useSyncHistoryItems(id);
+
+  const toggleSection = (type: string) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
 
   if (isLoading) {
     return (
@@ -259,76 +282,139 @@ export default function SyncHistoryDetail() {
               No items found for this sync
             </div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(itemsByType).map(([type, typeData]) => (
-                <div key={type}>
-                  <h3 className="text-lg font-semibold mb-3 capitalize flex items-center gap-2">
-                    {itemTypeIcons[type]}
-                    {type.replace('_', ' ')} ({typeData.items.length})
-                  </h3>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Azure DevOps ID</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {typeData.items.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.item_name}</TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={item.status === 'created' ? 'default' : 'destructive'}
-                              >
-                                {item.status === 'created' ? (
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                ) : (
-                                  <XCircle className="h-3 w-3 mr-1" />
-                                )}
-                                {item.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {item.azure_devops_id ? (
-                                <span className="font-mono">{item.azure_devops_id}</span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {item.azure_devops_url && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  asChild
-                                >
-                                  <a
-                                    href={item.azure_devops_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+            <div className="space-y-4">
+              {Object.entries(itemsByType).map(([type, typeData]) => {
+                const isExpanded = expandedSections.has(type);
+                return (
+                  <Collapsible
+                    key={type}
+                    open={isExpanded}
+                    onOpenChange={() => toggleSection(type)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between p-4 h-auto hover:bg-muted/50"
+                      >
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                          {itemTypeIcons[type]}
+                          <h3 className="text-lg font-semibold capitalize">
+                            {type.replace('_', ' ')} ({typeData.items.length})
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="text-green-600 dark:text-green-400">
+                            {typeData.created} created
+                          </span>
+                          {typeData.failed > 0 && (
+                            <span className="text-red-600 dark:text-red-400">
+                              {typeData.failed} failed
+                            </span>
+                          )}
+                        </div>
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="rounded-md border mt-2">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Azure DevOps ID</TableHead>
+                              <TableHead>Created By</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {typeData.items.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.item_name}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={item.status === 'created' ? 'default' : 'destructive'}
                                   >
-                                    <ExternalLink className="h-4 w-4 mr-2" />
-                                    View
-                                  </a>
-                                </Button>
-                              )}
-                              {item.error_message && (
-                                <div className="text-xs text-destructive mt-1">
-                                  {item.error_message}
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              ))}
+                                    {item.status === 'created' ? (
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                    ) : (
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                    )}
+                                    {item.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {item.azure_devops_id ? (
+                                    <span className="font-mono">{item.azure_devops_id}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {item.changed_by_user ? (
+                                    <div className="flex items-center gap-2">
+                                      {(item.changed_by_user.imageUrl || item.changed_by_user._links?.avatar?.href) && (
+                                        <img
+                                          src={item.changed_by_user.imageUrl || item.changed_by_user._links?.avatar?.href}
+                                          alt={item.changed_by_user.displayName || 'User'}
+                                          className="w-6 h-6 rounded-full"
+                                          onError={(e) => {
+                                            // Hide image if it fails to load
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      )}
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-medium">
+                                          {item.changed_by_user.displayName || item.changed_by_user.uniqueName || 'Unknown'}
+                                        </span>
+                                        {item.changed_by_user.uniqueName && item.changed_by_user.displayName && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {item.changed_by_user.uniqueName}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {item.azure_devops_url && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      asChild
+                                    >
+                                      <a
+                                        href={item.azure_devops_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <ExternalLink className="h-4 w-4 mr-2" />
+                                        View
+                                      </a>
+                                    </Button>
+                                  )}
+                                  {item.error_message && (
+                                    <div className="text-xs text-destructive mt-1">
+                                      {item.error_message}
+                                    </div>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
             </div>
           )}
         </CardContent>
