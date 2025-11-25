@@ -1,7 +1,7 @@
 import { useState, ReactNode } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Settings, Workflow as WorkflowIcon, Menu } from 'lucide-react';
+import { Settings, Workflow as WorkflowIcon, Menu, History, FileText, Map } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -22,6 +22,21 @@ const navItems: NavItem[] = [
     title: 'Configurations',
     href: '/configurations',
     icon: <Settings className="w-5 h-5" />,
+  },
+  {
+    title: 'Sync History',
+    href: '/sync-history',
+    icon: <History className="w-5 h-5" />,
+  },
+  {
+    title: 'Audit Logs',
+    href: '/audit-logs',
+    icon: <FileText className="w-5 h-5" />,
+  },
+  {
+    title: 'Field Mapping',
+    href: '/field-mapping',
+    icon: <Map className="w-5 h-5" />,
   },
 ];
 
@@ -50,9 +65,13 @@ const SidebarContent = ({ onLinkClick }: { onLinkClick?: () => void }) => {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.href || 
-            (item.href === '/configurations' && location.pathname.startsWith('/configurations'));
-          
+            const isActive =
+            location.pathname === item.href ||
+            (item.href === '/configurations' && location.pathname.startsWith('/configurations')) ||
+            (item.href === '/sync-history' && location.pathname.startsWith('/sync-history')) ||
+            (item.href === '/audit-logs' && location.pathname.startsWith('/audit-logs')) ||
+            (item.href === '/field-mapping' && location.pathname.startsWith('/field-mapping'));
+
           return (
             <Link
               key={item.href}
@@ -122,6 +141,10 @@ export const DashboardLayout = () => {
               {location.pathname === '/configurations' && 'System Configurations'}
               {location.pathname.startsWith('/configurations/ardoq') && 'Ardoq Configuration'}
               {location.pathname.startsWith('/configurations/azure-devops') && 'Azure DevOps Configuration'}
+              {location.pathname === '/sync-history' && 'Sync History'}
+              {location.pathname.startsWith('/sync-history/') && 'Sync History Details'}
+              {location.pathname === '/audit-logs' && 'Audit Logs'}
+              {location.pathname === '/field-mapping' && 'Field Mapping'}
             </h2>
           </div>
         </header>

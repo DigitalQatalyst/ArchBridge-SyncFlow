@@ -2,6 +2,34 @@ import type { HierarchyItem } from '@/contexts/SyncContext';
 import type { EpicSyncItem, FeatureSyncItem, UserStorySyncItem, SyncWorkItemsRequest } from '@/types/azure-devops';
 
 /**
+ * Extracts all fields from Ardoq item, preserving original field names
+ */
+function extractArdoqFields(item: HierarchyItem): Record<string, any> {
+  const fields: Record<string, any> = {
+    _id: item.id,
+    name: item.name,
+    type: item.type === 'epic' ? 'Epic' : item.type === 'feature' ? 'Feature' : 'User Story',
+    description: item.description,
+  };
+  
+  // Extract additional fields from rawData
+  if (item.rawData) {
+    Object.keys(item.rawData).forEach(key => {
+      // Skip fields we've already handled
+      if (!['id', 'name', 'type', 'description', 'parentId', 'parent', 'children'].includes(key)) {
+        fields[key] = item.rawData![key];
+      }
+    });
+  }
+  
+  // Also include explicitly defined fields if they exist
+  if (item.priority !== undefined) fields.priority = item.priority;
+  if (item.risk !== undefined) fields.risk = item.risk;
+  
+  return fields;
+}
+
+/**
  * Transforms flat hierarchy data to nested API format
  * Converts flat array with parentId relationships to nested structure: epics → features → user stories
  */
@@ -28,29 +56,25 @@ export function transformHierarchyToSyncFormat(
         (story) => story.parentId === feature.id
       );
 
-      const userStoryItems: UserStorySyncItem[] = featureUserStories.map((story) => ({
-        _id: story.id,
-        name: story.name,
-        type: 'User Story',
-        description: story.description,
-      }));
+      const userStoryItems: UserStorySyncItem[] = featureUserStories.map((story) => {
+        const storyFields = extractArdoqFields(story);
+        return storyFields as UserStorySyncItem;
+      });
 
+      const featureFields = extractArdoqFields(feature);
       return {
-        _id: feature.id,
-        name: feature.name,
+        ...featureFields,
         type: 'Feature',
-        description: feature.description,
         children: userStoryItems.length > 0 ? userStoryItems : undefined,
-      };
+      } as FeatureSyncItem;
     });
 
+    const epicFields = extractArdoqFields(epic);
     return {
-      _id: epic.id,
-      name: epic.name,
+      ...epicFields,
       type: 'Epic',
-      description: epic.description,
       children: featureItems.length > 0 ? featureItems : undefined,
-    };
+    } as EpicSyncItem;
   });
 
   return {

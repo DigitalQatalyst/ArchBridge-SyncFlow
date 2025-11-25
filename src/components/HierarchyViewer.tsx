@@ -54,6 +54,15 @@ const transformHierarchyToItems = (
           return;
         }
 
+        // Extract all fields from epic, preserving raw data
+        const epicRawData: Record<string, any> = { ...epic };
+        // Remove fields we're explicitly handling
+        delete epicRawData._id;
+        delete epicRawData.name;
+        delete epicRawData.type;
+        delete epicRawData.parent;
+        delete epicRawData.children;
+
         items.push({
           id: epic._id,
           name: epic.name || 'Unnamed Epic',
@@ -61,6 +70,7 @@ const transformHierarchyToItems = (
           parentId: initiativeId,
           priority: epic.priority,
           description: epic.description,
+          rawData: epicRawData,
         });
 
         // Transform features
@@ -71,6 +81,15 @@ const transformHierarchyToItems = (
               return;
             }
 
+            // Extract all fields from feature, preserving raw data
+            const featureRawData: Record<string, any> = { ...feature };
+            // Remove fields we're explicitly handling
+            delete featureRawData._id;
+            delete featureRawData.name;
+            delete featureRawData.type;
+            delete featureRawData.parent;
+            delete featureRawData.children;
+
             items.push({
               id: feature._id,
               name: feature.name || 'Unnamed Feature',
@@ -78,6 +97,7 @@ const transformHierarchyToItems = (
               parentId: epic._id,
               priority: feature.priority,
               description: feature.description,
+              rawData: featureRawData,
             });
 
             // Transform user stories
@@ -88,6 +108,14 @@ const transformHierarchyToItems = (
                   return;
                 }
 
+                // Extract all fields from user story, preserving raw data
+                const storyRawData: Record<string, any> = { ...story };
+                // Remove fields we're explicitly handling
+                delete storyRawData._id;
+                delete storyRawData.name;
+                delete storyRawData.type;
+                delete storyRawData.parent;
+
                 items.push({
                   id: story._id,
                   name: story.name || 'Unnamed User Story',
@@ -95,6 +123,7 @@ const transformHierarchyToItems = (
                   parentId: feature._id,
                   priority: story.priority,
                   description: story.description,
+                  rawData: storyRawData,
                 });
               });
             }

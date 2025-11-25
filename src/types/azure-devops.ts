@@ -218,8 +218,14 @@ export interface EpicSyncItem {
   name: string;
   type: string;
   description?: string;
+  // Additional Ardoq fields
+  lastUpdatedBy?: string;
+  lastUpdatedDate?: string;
+  tags?: string[];
+  capabilityMapOrder?: number;
+  priority?: string;
+  [key: string]: any; // Allow any additional fields
   children?: FeatureSyncItem[];
-  [key: string]: any;
 }
 
 export interface FeatureSyncItem {
@@ -227,8 +233,18 @@ export interface FeatureSyncItem {
   name: string;
   type: string;
   description?: string;
-  children?: UserStorySyncItem[];
+  // Additional Ardoq fields
+  lastUpdatedBy?: string;
+  lastUpdatedDate?: string;
+  tags?: string[];
+  capabilityMapOrder?: number;
+  context?: string; // Context (Description)
+  purpose?: string;
+  input?: string;
+  output?: string; // Output (Definition of Done)
+  approach?: string;
   [key: string]: any;
+  children?: UserStorySyncItem[];
 }
 
 export interface UserStorySyncItem {
@@ -236,11 +252,21 @@ export interface UserStorySyncItem {
   name: string;
   type: string;
   description?: string;
+  // Additional Ardoq fields
+  lastUpdatedBy?: string;
+  lastUpdatedDate?: string;
+  tags?: string[];
+  capabilityMapOrder?: number;
+  acceptanceCriteria?: string;
+  classification?: string;
+  priority?: number; // Priority (1-4)
+  risk?: number; // Risk (1-high, 2-med, 3-low)
   [key: string]: any;
 }
 
 export interface SyncWorkItemsRequest {
   epics: EpicSyncItem[];
+  fieldMappingConfigId?: string; // Optional field mapping configuration ID
 }
 
 // Work Items Check Types

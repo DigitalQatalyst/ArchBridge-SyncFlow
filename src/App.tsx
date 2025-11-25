@@ -8,6 +8,10 @@ import Workflow from "./pages/Workflow";
 import Configurations from "./pages/Configurations";
 import ArdoqConfiguration from "./pages/ArdoqConfiguration";
 import AzureDevOpsConfiguration from "./pages/AzureDevOpsConfiguration";
+import SyncHistory from "./pages/SyncHistory";
+import SyncHistoryDetail from "./pages/SyncHistoryDetail";
+import AuditLogs from "./pages/AuditLogs";
+import FieldMapping from "./pages/FieldMapping";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +29,10 @@ const App = () => (
             <Route path="/configurations" element={<Configurations />} />
             <Route path="/configurations/ardoq" element={<ArdoqConfiguration />} />
             <Route path="/configurations/azure-devops" element={<AzureDevOpsConfiguration />} />
+            <Route path="/sync-history" element={<SyncHistory />} />
+            <Route path="/sync-history/:id" element={<SyncHistoryDetail />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/field-mapping" element={<FieldMapping />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

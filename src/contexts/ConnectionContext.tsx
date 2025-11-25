@@ -24,6 +24,7 @@ interface ConnectionContextType {
   targetConfigId?: string; // Azure DevOps configuration ID
   projectName?: string; // Created Azure DevOps project name
   overwriteMode?: boolean; // Whether to overwrite existing work items
+  fieldMappingConfigId?: string; // Selected field mapping configuration ID
   setSourceType: (type: string) => void;
   setSourceCredentials: (credentials: SourceCredentials) => void;
   setSourceConnected: (connected: boolean) => void;
@@ -34,6 +35,7 @@ interface ConnectionContextType {
   setTargetConfigId: (configId: string | undefined) => void;
   setProjectName: (name: string | undefined) => void;
   setOverwriteMode: (overwrite: boolean | undefined) => void;
+  setFieldMappingConfigId: (configId: string | undefined) => void;
   resetConnection: () => void;
 }
 
@@ -50,6 +52,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
   const [targetConfigId, setTargetConfigId] = useState<string | undefined>(undefined);
   const [projectName, setProjectName] = useState<string | undefined>(undefined);
   const [overwriteMode, setOverwriteMode] = useState<boolean | undefined>(undefined);
+  const [fieldMappingConfigId, setFieldMappingConfigId] = useState<string | undefined>(undefined);
 
   const resetConnection = () => {
     setSourceType('');
@@ -62,6 +65,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
     setTargetConfigId(undefined);
     setProjectName(undefined);
     setOverwriteMode(undefined);
+    setFieldMappingConfigId(undefined);
   };
 
   return (
@@ -77,6 +81,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         targetConfigId,
         projectName,
         overwriteMode,
+        fieldMappingConfigId,
         setSourceType,
         setSourceCredentials,
         setSourceConnected,
@@ -87,6 +92,7 @@ export const ConnectionProvider: React.FC<{ children: ReactNode }> = ({ children
         setTargetConfigId,
         setProjectName,
         setOverwriteMode,
+        setFieldMappingConfigId,
         resetConnection,
       }}
     >

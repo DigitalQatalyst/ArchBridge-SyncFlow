@@ -13,21 +13,29 @@ import type {
   SyncEvent,
   SyncEventType,
   WorkItemsCheckResponse,
-} from '@/types/azure-devops';
+} from "@/types/azure-devops";
 
 // Get API base URL from environment variable or default to localhost:3000
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-const API_PREFIX = '/api/azure-devops';
+const API_PREFIX = "/api/azure-devops";
 
 /**
  * Helper function to build query string from params
  */
 function buildQueryString(params?: Record<string, string | undefined>): string {
-  if (!params) return '';
-  const filtered = Object.entries(params).filter(([_, value]) => value !== undefined);
-  if (filtered.length === 0) return '';
-  return '?' + filtered.map(([key, value]) => `${key}=${encodeURIComponent(value!)}`).join('&');
+  if (!params) return "";
+  const filtered = Object.entries(params).filter(
+    ([_, value]) => value !== undefined
+  );
+  if (filtered.length === 0) return "";
+  return (
+    "?" +
+    filtered
+      .map(([key, value]) => `${key}=${encodeURIComponent(value!)}`)
+      .join("&")
+  );
 }
 
 /**
@@ -38,12 +46,12 @@ async function fetchApi<T>(
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE_URL}${API_PREFIX}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options?.headers,
       },
     });
@@ -61,7 +69,7 @@ async function fetchApi<T>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -75,8 +83,8 @@ export const azureDevOpsApi = {
   createConfiguration: async (
     config: ConfigurationCreateRequest
   ): Promise<ApiResponse<CreateConfigurationResponse>> => {
-    return fetchApi<CreateConfigurationResponse>('/configurations', {
-      method: 'POST',
+    return fetchApi<CreateConfigurationResponse>("/configurations", {
+      method: "POST",
       body: JSON.stringify(config),
     });
   },
@@ -94,15 +102,19 @@ export const azureDevOpsApi = {
   /**
    * Get configuration by ID
    */
-  getConfiguration: async (id: string): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
+  getConfiguration: async (
+    id: string
+  ): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
     return fetchApi<AzureDevOpsConfiguration>(`/configurations/${id}`);
   },
 
   /**
    * Get active configuration
    */
-  getActiveConfiguration: async (): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
-    return fetchApi<AzureDevOpsConfiguration>('/configurations/active');
+  getActiveConfiguration: async (): Promise<
+    ApiResponse<AzureDevOpsConfiguration>
+  > => {
+    return fetchApi<AzureDevOpsConfiguration>("/configurations/active");
   },
 
   /**
@@ -113,7 +125,7 @@ export const azureDevOpsApi = {
     config: ConfigurationUpdateRequest
   ): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
     return fetchApi<AzureDevOpsConfiguration>(`/configurations/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(config),
     });
   },
@@ -121,19 +133,26 @@ export const azureDevOpsApi = {
   /**
    * Delete configuration
    */
-  deleteConfiguration: async (id: string): Promise<ApiResponse<{ message: string }>> => {
+  deleteConfiguration: async (
+    id: string
+  ): Promise<ApiResponse<{ message: string }>> => {
     return fetchApi<{ message: string }>(`/configurations/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 
   /**
    * Activate configuration
    */
-  activateConfiguration: async (id: string): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
-    return fetchApi<AzureDevOpsConfiguration>(`/configurations/${id}/activate`, {
-      method: 'POST',
-    });
+  activateConfiguration: async (
+    id: string
+  ): Promise<ApiResponse<AzureDevOpsConfiguration>> => {
+    return fetchApi<AzureDevOpsConfiguration>(
+      `/configurations/${id}/activate`,
+      {
+        method: "POST",
+      }
+    );
   },
 
   /**
@@ -144,11 +163,11 @@ export const azureDevOpsApi = {
   ): Promise<ApiResponse<TestConnectionResponse>> => {
     const query = buildQueryString(configId ? { configId } : undefined);
     const url = `${API_BASE_URL}${API_PREFIX}/test-connection${query}`;
-    
+
     try {
       const response = await fetch(url, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
@@ -157,7 +176,8 @@ export const azureDevOpsApi = {
       if (!response.ok) {
         return {
           success: false,
-          error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+          error:
+            data.error || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
@@ -166,7 +186,7 @@ export const azureDevOpsApi = {
       return {
         success: true,
         data: {
-          timestamp: data.data?.timestamp || '',
+          timestamp: data.data?.timestamp || "",
           configuration: data.configuration,
           projects: data.data?.projects,
           projectCount: data.data?.projectCount,
@@ -176,7 +196,8 @@ export const azureDevOpsApi = {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error:
+          error instanceof Error ? error.message : "Unknown error occurred",
       };
     }
   },
@@ -200,7 +221,7 @@ export const azureDevOpsApi = {
   ): Promise<ApiResponse<CreateProjectResponse>> => {
     const query = buildQueryString(configId ? { configId } : undefined);
     return fetchApi<CreateProjectResponse>(`/projects${query}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(project),
     });
   },
@@ -208,9 +229,7 @@ export const azureDevOpsApi = {
   /**
    * List all projects in the Azure DevOps organization
    */
-  listProjects: async (
-    configId?: string
-  ): Promise<ApiResponse<Project[]>> => {
+  listProjects: async (configId?: string): Promise<ApiResponse<Project[]>> => {
     const query = buildQueryString(configId ? { configId } : undefined);
     return fetchApi<Project[]>(`/projects${query}`);
   },
@@ -245,16 +264,18 @@ export const azureDevOpsApi = {
   ): Promise<void> => {
     const queryParams: Record<string, string | undefined> = {};
     if (configId) queryParams.configId = configId;
-    if (overwrite) queryParams.overwrite = 'true';
+    if (overwrite) queryParams.overwrite = "true";
     const query = buildQueryString(queryParams);
-    const url = `${API_BASE_URL}${API_PREFIX}/projects/${encodeURIComponent(projectName)}/workitems${query}`;
+    const url = `${API_BASE_URL}${API_PREFIX}/projects/${encodeURIComponent(
+      projectName
+    )}/workitems${query}`;
 
     try {
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
         },
         body: JSON.stringify(request),
       });
@@ -267,12 +288,12 @@ export const azureDevOpsApi = {
       }
 
       if (!response.body) {
-        throw new Error('Response body is not readable');
+        throw new Error("Response body is not readable");
       }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      let buffer = "";
       let currentEventType: SyncEventType | null = null;
 
       while (true) {
@@ -284,15 +305,15 @@ export const azureDevOpsApi = {
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
 
-          if (line.startsWith('event:')) {
+          if (line.startsWith("event:")) {
             currentEventType = line.substring(6).trim() as SyncEventType;
-          } else if (line.startsWith('data:')) {
+          } else if (line.startsWith("data:")) {
             const dataStr = line.substring(5).trim();
             if (dataStr && currentEventType) {
               try {
@@ -306,11 +327,11 @@ export const azureDevOpsApi = {
                     };
                 callbacks.onEvent?.(event);
               } catch (parseError) {
-                console.error('Failed to parse SSE data:', parseError, dataStr);
+                console.error("Failed to parse SSE data:", parseError, dataStr);
               }
             }
             currentEventType = null;
-          } else if (line === '') {
+          } else if (line === "") {
             // Empty line indicates end of event
             currentEventType = null;
           }
@@ -318,10 +339,9 @@ export const azureDevOpsApi = {
       }
     } catch (error) {
       callbacks.onError?.(
-        error instanceof Error ? error : new Error('Unknown error occurred')
+        error instanceof Error ? error : new Error("Unknown error occurred")
       );
       throw error;
     }
   },
 };
-

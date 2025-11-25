@@ -8,6 +8,7 @@ export type WorkflowStep =
   | 'target-select'
   | 'target-connect'
   | 'project-create'
+  | 'field-mapping'
   | 'hierarchy'
   | 'sync';
 
@@ -22,6 +23,7 @@ const allSteps: { id: WorkflowStep; label: string }[] = [
   { id: 'target-select', label: 'Target System' },
   { id: 'target-connect', label: 'Target Connection' },
   { id: 'project-create', label: 'Create Project' },
+  { id: 'field-mapping', label: 'Field Mapping' },
   { id: 'hierarchy', label: 'Select Items' },
   { id: 'sync', label: 'Sync' },
 ];
@@ -29,10 +31,10 @@ const allSteps: { id: WorkflowStep; label: string }[] = [
 export const BreadcrumbNavigation = ({ currentStep, completedSteps }: BreadcrumbNavigationProps) => {
   const { targetType } = useConnection();
   
-  // Only show project-create step if target is Azure DevOps
+  // Only show project-create step if target is Azure DevOps, but skip field-mapping
   const steps = targetType === 'azure-devops'
-    ? allSteps
-    : allSteps.filter((step) => step.id !== 'project-create');
+    ? allSteps.filter((step) => step.id !== 'field-mapping')
+    : allSteps.filter((step) => step.id !== 'project-create' && step.id !== 'field-mapping');
   
   const currentIndex = steps.findIndex((s) => s.id === currentStep);
 

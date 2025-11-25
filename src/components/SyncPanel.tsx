@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, AlertCircle, ExternalLink, X, Copy, Sparkles, Trophy, Clock, Package, Layers, FileText, Zap, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle, Loader2, AlertCircle, ExternalLink, X, Copy, Sparkles, Trophy, Clock, Package, Layers, FileText, Zap, ChevronDown, ChevronRight, History } from 'lucide-react';
 import { useSync, HierarchyItem } from '@/contexts/SyncContext';
 import { useConnection } from '@/contexts/ConnectionContext';
 import { Progress } from '@/components/ui/progress';
@@ -155,6 +155,7 @@ export const SyncPanel = () => {
     projectName,
     targetConfigId,
     overwriteMode,
+    fieldMappingConfigId,
     resetConnection,
   } = useConnection();
   const { toast } = useToast();
@@ -214,6 +215,10 @@ export const SyncPanel = () => {
 
     try {
       const syncRequest = transformHierarchyToSyncFormat(hierarchyData, selectedHierarchyItems);
+      // Include field mapping config ID if selected
+      if (fieldMappingConfigId) {
+        syncRequest.fieldMappingConfigId = fieldMappingConfigId;
+      }
       await sync(projectName, syncRequest, targetConfigId, overwriteMode);
     } catch (error) {
       toast({
@@ -657,6 +662,14 @@ User Stories: ${summary.userStories.created}/${summary.userStories.total}`;
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Summary
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/sync-history')}
+                    className="flex-1"
+                  >
+                    <History className="w-4 h-4 mr-2" />
+                    View Sync History
                   </Button>
                   {projectName && (
                     <Button

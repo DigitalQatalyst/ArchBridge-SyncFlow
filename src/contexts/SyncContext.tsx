@@ -8,6 +8,7 @@ export interface HierarchyItem {
   priority?: string;
   risk?: string;
   description?: string;
+  rawData?: Record<string, any>; // Store all raw Ardoq fields for field mapping
 }
 
 interface SyncContextType {
