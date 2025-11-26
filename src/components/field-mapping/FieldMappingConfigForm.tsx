@@ -33,6 +33,7 @@ interface FieldMappingConfigFormProps {
   projectId: string;
   projectName?: string;
   config?: FieldMappingConfig;
+  azureDevOpsConfigId?: string; // Azure DevOps configuration ID for API calls
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -41,13 +42,14 @@ export function FieldMappingConfigForm({
   projectId,
   projectName,
   config,
+  azureDevOpsConfigId,
   onSuccess,
   onCancel,
 }: FieldMappingConfigFormProps) {
   const [mappings, setMappings] = useState<FieldMapping[]>(config?.mappings || []);
   const createMutation = useCreateFieldMappingConfig();
   const updateMutation = useUpdateFieldMappingConfig();
-  const { data: workItemTypes, isLoading: loadingTypes } = useWorkItemTypes(projectId);
+  const { data: workItemTypes, isLoading: loadingTypes } = useWorkItemTypes(projectId, azureDevOpsConfigId);
 
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),

@@ -1,15 +1,30 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fieldMappingApi } from '@/lib/api/field-mapping';
-import type { FieldMappingConfig, WorkItemTypeInfo } from '@/types/field-mapping';
+import type { FieldMappingConfig, FieldMappingTemplate, WorkItemTypeInfo } from '@/types/field-mapping';
 import { useToast } from '@/hooks/use-toast';
 
 const fieldMappingKeys = {
   all: ['field-mapping'] as const,
+  templates: (processTemplateName?: string) => 
+    [...fieldMappingKeys.all, 'templates', processTemplateName] as const,
   configs: (projectId: string) => [...fieldMappingKeys.all, 'configs', projectId] as const,
   config: (configId: string) => [...fieldMappingKeys.all, 'config', configId] as const,
   workItemTypes: (projectId: string, configId?: string) => 
     [...fieldMappingKeys.all, 'work-item-types', projectId, configId] as const,
 };
+
+export function useFieldMappingTemplates(processTemplateName?: string) {
+  return useQuery({
+    queryKey: fieldMappingKeys.templates(processTemplateName),
+    queryFn: async () => {
+      const response = await fieldMappingApi.getTemplates(processTemplateName);
+      if (!response.success || !response.data) {
+        throw new Error(response.error || 'Failed to fetch field mapping templates');
+      }
+      return response.data;
+    },
+  });
+}
 
 export function useFieldMappingConfigs(projectId: string | undefined) {
   return useQuery({

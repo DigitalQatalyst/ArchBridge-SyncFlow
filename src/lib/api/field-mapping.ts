@@ -2,6 +2,7 @@ import { API_BASE_URL } from "@/lib/api/azure-devops";
 import type { ApiResponse } from "@/types/azure-devops";
 import type {
   FieldMappingConfig,
+  FieldMappingTemplate,
   WorkItemTypeInfo,
   AzureDevOpsField,
 } from "@/types/field-mapping";
@@ -31,6 +32,18 @@ async function fetchApi<T>(
 }
 
 export const fieldMappingApi = {
+  /**
+   * Get process template templates (system defaults)
+   */
+  getTemplates: async (
+    processTemplateName?: string
+  ): Promise<ApiResponse<FieldMappingTemplate[]>> => {
+    const query = processTemplateName
+      ? `?processTemplateName=${encodeURIComponent(processTemplateName)}`
+      : '';
+    return fetchApi<FieldMappingTemplate[]>(`/templates${query}`);
+  },
+
   /**
    * Get all field mapping configurations for a project
    */

@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Plus, AlertCircle, Map } from 'lucide-react';
 import { useListAzureDevOpsProjects, useAzureDevOpsConfigurations } from '@/hooks/useAzureDevOps';
-import { useFieldMappingConfigs } from '@/hooks/useFieldMapping';
+import { useFieldMappingConfigs, useFieldMappingTemplates } from '@/hooks/useFieldMapping';
 import { FieldMappingConfigList } from '@/components/field-mapping/FieldMappingConfigList';
 import { FieldMappingConfigForm } from '@/components/field-mapping/FieldMappingConfigForm';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 export default function FieldMapping() {
   const [selectedConfigId, setSelectedConfigId] = useState<string>('');
@@ -26,6 +28,12 @@ export default function FieldMapping() {
     isLoading: loadingFieldMappingConfigs,
     error: configsError,
   } = useFieldMappingConfigs(selectedProjectId);
+
+  const {
+    data: templates,
+    isLoading: loadingTemplates,
+    error: templatesError,
+  } = useFieldMappingTemplates();
 
   // Reset project selection when config changes
   const handleConfigChange = (configId: string) => {
@@ -126,36 +134,109 @@ export default function FieldMapping() {
           {/* Field Mapping Configurations */}
           {selectedProjectId && (
             <div className="pt-4 border-t">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Field Mapping Configurations</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Manage field mappings for project: <strong>{selectedProject?.name}</strong>
-                  </p>
-                </div>
-                <Button onClick={() => setShowCreateForm(true)} disabled={showCreateForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Mapping
-                </Button>
-              </div>
+              <Tabs defaultValue="project" className="w-full">
+                <TabsList>
+                  <TabsTrigger value="project">Project-Specific Configurations</TabsTrigger>
+                  <TabsTrigger value="templates">Process Template Templates</TabsTrigger>
+                </TabsList>
 
-              {showCreateForm ? (
-                <FieldMappingConfigForm
-                  projectId={selectedProjectId}
-                  projectName={selectedProject?.name}
-                  onSuccess={() => {
-                    setShowCreateForm(false);
-                  }}
-                  onCancel={() => setShowCreateForm(false)}
-                />
-              ) : (
-                <FieldMappingConfigList
-                  projectId={selectedProjectId}
-                  configs={configs}
-                  isLoading={loadingFieldMappingConfigs}
-                  error={configsError}
-                />
-              )}
+                <TabsContent value="project" className="space-y-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Project-Specific Field Mapping Configurations</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage custom field mappings for project: <strong>{selectedProject?.name}</strong>
+                      </p>
+                    </div>
+                    <Button onClick={() => setShowCreateForm(true)} disabled={showCreateForm}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Mapping
+                    </Button>
+                  </div>
+
+                  {showCreateForm ? (
+                    <FieldMappingConfigForm
+                      projectId={selectedProjectId}
+                      projectName={selectedProject?.name}
+                      azureDevOpsConfigId={selectedConfigId}
+                      onSuccess={() => {
+                        setShowCreateForm(false);
+                      }}
+                      onCancel={() => setShowCreateForm(false)}
+                    />
+                  ) : (
+                    <FieldMappingConfigList
+                      projectId={selectedProjectId}
+                      configs={configs}
+                      isLoading={loadingFieldMappingConfigs}
+                      error={configsError}
+                      azureDevOpsConfigId={selectedConfigId}
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="templates" className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Process Template Templates</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      System default field mapping templates for each Azure DevOps process template. These templates are read-only and reusable across all projects using the same process template.
+                    </p>
+                  </div>
+
+                  {loadingTemplates ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading templates...</span>
+                    </div>
+                  ) : templatesError ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Failed to load templates: {templatesError.message}
+                      </AlertDescription>
+                    </Alert>
+                  ) : !templates || templates.length === 0 ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No process template templates available.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-4">
+                      {templates.map((template) => (
+                        <Card key={template.id}>
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CardTitle className="text-lg">{template.name}</CardTitle>
+                                  <Badge variant="secondary">System Default</Badge>
+                                  <Badge variant="outline">{template.processTemplateName}</Badge>
+                                </div>
+                                {template.description && (
+                                  <CardDescription>{template.description}</CardDescription>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="text-sm text-muted-foreground">
+                                <strong>{template.mappings.length}</strong> field mapping{template.mappings.length !== 1 ? 's' : ''}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Process Template: {template.processTemplateName}
+                                {template.processTemplateTypeId && ` (${template.processTemplateTypeId})`}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </CardContent>

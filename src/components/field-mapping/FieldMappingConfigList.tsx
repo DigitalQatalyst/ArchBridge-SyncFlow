@@ -23,6 +23,7 @@ interface FieldMappingConfigListProps {
   configs?: FieldMappingConfig[];
   isLoading: boolean;
   error: Error | null;
+  azureDevOpsConfigId?: string; // Azure DevOps configuration ID for API calls
 }
 
 export function FieldMappingConfigList({
@@ -30,6 +31,7 @@ export function FieldMappingConfigList({
   configs,
   isLoading,
   error,
+  azureDevOpsConfigId,
 }: FieldMappingConfigListProps) {
   const [editingConfig, setEditingConfig] = useState<FieldMappingConfig | null>(null);
   const [deletingConfig, setDeletingConfig] = useState<FieldMappingConfig | null>(null);
@@ -84,6 +86,7 @@ export function FieldMappingConfigList({
         projectId={projectId}
         projectName={editingConfig.projectName}
         config={editingConfig}
+        azureDevOpsConfigId={azureDevOpsConfigId}
         onSuccess={() => setEditingConfig(null)}
         onCancel={() => setEditingConfig(null)}
       />

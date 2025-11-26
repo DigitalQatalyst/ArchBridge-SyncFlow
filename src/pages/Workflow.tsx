@@ -5,6 +5,7 @@ import { SourceConnectionForm } from '@/components/SourceConnectionForm';
 import { TargetSelector } from '@/components/TargetSelector';
 import { TargetConnectionForm } from '@/components/TargetConnectionForm';
 import { ProjectCreationStep } from '@/components/ProjectCreationStep';
+import { FieldMappingSelectionStep } from '@/components/field-mapping/FieldMappingSelectionStep';
 import { HierarchyViewer } from '@/components/HierarchyViewer';
 import { SyncPanel } from '@/components/SyncPanel';
 import { ConnectionProvider, useConnection } from '@/contexts/ConnectionContext';
@@ -74,9 +75,16 @@ const WorkflowContent = () => {
             />
           </div>
         )}
-        {currentStep === 'project-create' && (
+        {currentStep === 'project-create' && targetType === 'azure-devops' && (
           <div className="animate-slide-up">
             <ProjectCreationStep
+              onNext={() => goToNextStep('field-mapping')}
+            />
+          </div>
+        )}
+        {currentStep === 'field-mapping' && targetType === 'azure-devops' && (
+          <div className="animate-slide-up">
+            <FieldMappingSelectionStep
               onNext={() => goToNextStep('hierarchy')}
             />
           </div>

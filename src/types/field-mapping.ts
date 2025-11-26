@@ -16,8 +16,21 @@ export interface FieldMappingConfig {
   description?: string;
   projectId: string; // Azure DevOps project ID this mapping is for
   projectName?: string; // Azure DevOps project name (for display)
+  processTemplateName?: string; // Process template name (for reference)
   mappings: FieldMapping[];
   isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FieldMappingTemplate {
+  id: string;
+  processTemplateName: string; // 'Agile', 'Scrum', 'CMMI', 'Basic'
+  processTemplateTypeId?: string; // Azure DevOps process template type ID
+  name: string;
+  description?: string;
+  mappings: FieldMapping[];
+  isSystemDefault: boolean; // Always true for templates
   createdAt?: string;
   updatedAt?: string;
 }

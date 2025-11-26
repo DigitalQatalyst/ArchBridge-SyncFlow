@@ -156,6 +156,7 @@ export const SyncPanel = () => {
     targetConfigId,
     overwriteMode,
     fieldMappingConfigId,
+    processTemplateTemplateName,
     resetConnection,
   } = useConnection();
   const { toast } = useToast();
@@ -215,9 +216,11 @@ export const SyncPanel = () => {
 
     try {
       const syncRequest = transformHierarchyToSyncFormat(hierarchyData, selectedHierarchyItems);
-      // Include field mapping config ID if selected
+      // Include field mapping config ID or process template template name if selected
       if (fieldMappingConfigId) {
         syncRequest.fieldMappingConfigId = fieldMappingConfigId;
+      } else if (processTemplateTemplateName) {
+        syncRequest.processTemplateTemplateName = processTemplateTemplateName;
       }
       await sync(projectName, syncRequest, targetConfigId, overwriteMode);
     } catch (error) {

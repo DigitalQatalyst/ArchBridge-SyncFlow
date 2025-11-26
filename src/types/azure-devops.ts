@@ -266,7 +266,8 @@ export interface UserStorySyncItem {
 
 export interface SyncWorkItemsRequest {
   epics: EpicSyncItem[];
-  fieldMappingConfigId?: string; // Optional field mapping configuration ID
+  fieldMappingConfigId?: string; // Optional project-specific field mapping configuration ID
+  processTemplateTemplateName?: string; // Optional process template template name (e.g., 'Agile', 'Scrum')
 }
 
 // Work Items Check Types
